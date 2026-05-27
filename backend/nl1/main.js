@@ -1392,6 +1392,13 @@ function loadProductDetail() {
     }
 
     const product = getProductById(productId);
+    const rating = Number(product?.rating) || 0;
+    const sold = Number(product?.sold) || 0;
+    const detailMeta = rating
+        ? `<div class="product-detail-rating">⭐ ${rating} · Đã bán ${sold}</div>`
+        : sold
+            ? `<div class="product-detail-rating">Đã bán ${sold}</div>`
+            : '';
     if (!product) {
         container.innerHTML = '<div class="empty-message">Sản phẩm không tồn tại. <a href="index.html">Quay lại</a></div>';
         return;
@@ -1419,7 +1426,7 @@ function loadProductDetail() {
                     <h2>${product.name}</h2>
                     <p class="product-detail-description">${product.description}</p>
                     <div class="product-detail-price">${product.price.toLocaleString()}đ</div>
-                    <div class="product-detail-rating">⭐ ${product.rating} · Đã bán ${product.sold || 0}</div>
+                    ${detailMeta}
                 </div>
             </section>
             <form id="editProductForm" class="product-edit-form premium-edit-form">
@@ -1464,7 +1471,7 @@ function loadProductDetail() {
             <div class="product-detail-info">
                 <div class="product-detail-category">${product.category}</div>
                 <h2>${product.name}</h2>
-                <div class="product-detail-rating">⭐ ${product.rating} · Đã bán ${product.sold || 0}</div>
+                ${detailMeta}
                 <p class="product-detail-description">${product.description}</p>
                 <div class="product-detail-price">${product.price.toLocaleString()}đ</div>
                 <div class="quantity-control">
