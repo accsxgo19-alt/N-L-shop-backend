@@ -103,131 +103,154 @@
 
     <script src="main.js"></script>
     <script>
-        let emailPopupTimer = null;
+        /* Email popup robustness and mobile fixes */
+        let emailPopupAutoTimer = null;
         let emailPopupInteracted = false;
-        const EMAIL_POPUP_CLOSED_KEY = 'emailPopupClosed';
-        const EMAIL_POPUP_SUBMITTED_KEY = 'emailPopupSubmitted';
 
-        document.addEventListener('DOMContentLoaded', function () {
-            initializePage();
-            loadProducts();
-            setupSearchAndFilter();
-            scheduleEmailModal();
-            bindEmailModalEvents();
-        });
-
-        function scheduleEmailModal() {
-            setTimeout(showEmailModal, 5000);
-        }
-
-        function showEmailModal() {
+        function getEmailPopupElements() {
             const overlay = document.getElementById('emailModalOverlay');
-            const form = document.getElementById('emailModalForm');
-            const emailInput = document.getElementById('modalEmailInput');
-
-            if (!overlay || overlay.classList.contains('hidden') === false) {
-                return;
-            }
-
-            if (sessionStorage.getItem(EMAIL_POPUP_CLOSED_KEY) === '1' || localStorage.getItem(EMAIL_POPUP_SUBMITTED_KEY) === '1') {
-                return;
-            }
-
-            overlay.classList.remove('hidden');
-            overlay.style.display = 'flex';
-            emailPopupInteracted = false;
-            clearTimeout(emailPopupTimer);
-
-            emailPopupTimer = setTimeout(() => {
-                if (!emailPopupInteracted) {
-                    hideEmailModal();
-                    sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
-                }
-            }, 5000);
-
-            if (emailInput) {
-                emailInput.addEventListener('focus', markEmailPopupInteracted, { once: true });
-                emailInput.addEventListener('input', markEmailPopupInteracted, { once: true });
-            }
-
-            if (form) {
-                form.addEventListener('click', markEmailPopupInteracted, { once: true });
-            }
-        }
-
-        function bindEmailModalEvents() {
-            const overlay = document.getElementById('emailModalOverlay');
+            const modal = document.querySelector('.email-modal');
             const closeBtn = document.querySelector('.modal-close');
             const form = document.getElementById('emailModalForm');
-            const emailInput = document.getElementById('modalEmailInput');
+            const input = form ? form.querySelector('input[type="email"], input') : null;
+            const message = document.getElementById('modalMessage');
 
-            if (closeBtn) {
-                const handleCloseClick = function (event) {
-                    if (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    clearTimeout(emailPopupTimer);
-                    hideEmailModal();
-                    sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
-                };
-                closeBtn.addEventListener('click', handleCloseClick);
-                closeBtn.addEventListener('touchstart', handleCloseClick, { passive: false });
-            }
+            return { overlay, modal, closeBtn, form, input, message };
+        }
 
-            if (emailInput) {
-                emailInput.addEventListener('focus', markEmailPopupInteracted);
-                emailInput.addEventListener('input', markEmailPopupInteracted);
-            }
+        function hideEmailPopup(saveClosed = true) {
+            const { overlay } = getEmailPopupElements();
+            if (!overlay) return;
 
-            if (form) {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    markEmailPopupInteracted();
+            clearTimeout(emailPopupAutoTimer);
 
-                    const emailInput = document.getElementById('modalEmailInput');
-                    const messageElement = document.getElementById('modalMessage');
-                    const email = emailInput.value.trim();
-                    if (!email) {
-                        emailInput.focus();
-                        return;
-                    }
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
 
-                    const normalizedEmail = saveEmailSubscriber(email);
-                    const discountCode = getRecommendedCustomerDiscountCode(normalizedEmail);
-                    sessionStorage.setItem('popupDiscountCode', discountCode);
-                    localStorage.setItem(EMAIL_POPUP_SUBMITTED_KEY, '1');
-
-                    if (discountCode === 'LOYAL10') {
-                        messageElement.textContent = `Chào mừng trở lại! Bạn nhận được mã ${discountCode} - Giảm 10% cho mỗi sản phẩm khi mua 5 món trở lên.`;
-                    } else {
-                        messageElement.textContent = `Cảm ơn bạn! Mã giảm giá của bạn là ${discountCode}. Nhập mã này khi thanh toán để được ưu đãi.`;
-                    }
-                    messageElement.style.color = '#7a1f7a';
-                    messageElement.style.fontWeight = '700';
-                    emailInput.value = '';
-                });
+            if (saveClosed) {
+                sessionStorage.setItem('emailPopupClosed', '1');
             }
         }
 
         function markEmailPopupInteracted() {
             emailPopupInteracted = true;
-            clearTimeout(emailPopupTimer);
+            clearTimeout(emailPopupAutoTimer);
         }
 
-        function hideEmailModal() {
-            const overlay = document.getElementById('emailModalOverlay');
+        function bindEmailPopupEvents() {
+            const { overlay, closeBtn, form, input, message } = getEmailPopupElements();
+
             if (!overlay) return;
-            overlay.classList.add('hidden');
-            overlay.style.display = 'none';
-            clearTimeout(emailPopupTimer);
+
+            if (overlay.dataset.emailPopupBound === '1') return;
+            overlay.dataset.emailPopupBound = '1';
+
+            if (closeBtn) {
+                const closeHandler = function(event) {
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    hideEmailPopup(true);
+                };
+
+                closeBtn.addEventListener('click', closeHandler);
+                closeBtn.addEventListener('touchstart', closeHandler, { passive: false });
+            }
+
+            if (input) {
+                input.addEventListener('focus', markEmailPopupInteracted);
+                input.addEventListener('input', markEmailPopupInteracted);
+                input.addEventListener('touchstart', markEmailPopupInteracted, { passive: true });
+            }
+
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    markEmailPopupInteracted();
+
+                    const email = input ? input.value.trim() : '';
+
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        if (message) {
+                            message.textContent = 'Vui lòng nhập email hợp lệ.';
+                            message.style.color = '#d32f2f';
+                        }
+                        return;
+                    }
+
+                    if (typeof saveEmailSubscriber === 'function') {
+                        saveEmailSubscriber(email);
+                    } else {
+                        const subscribers = JSON.parse(localStorage.getItem('emailSubscribers') || '[]');
+                        const normalized = email.toLowerCase();
+                        if (!subscribers.includes(normalized)) {
+                            subscribers.push(normalized);
+                            localStorage.setItem('emailSubscribers', JSON.stringify(subscribers));
+                        }
+                    }
+
+                    localStorage.setItem('emailPopupSubmitted', '1');
+
+                    if (message) {
+                        message.textContent = 'Cảm ơn bạn! Mã giảm giá của bạn là EMAIL10. Nhập mã này khi thanh toán để được ưu đãi.';
+                        message.style.color = '#7a1f7a';
+                    }
+
+                    setTimeout(function() {
+                        hideEmailPopup(true);
+                    }, 800);
+                });
+            }
         }
 
-        function closeEmailModal() {
-            clearTimeout(emailPopupTimer);
-            hideEmailModal();
-            sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
+        function startEmailPopupAutoHideTimer() {
+            const { overlay } = getEmailPopupElements();
+            if (!overlay) return;
+
+            clearTimeout(emailPopupAutoTimer);
+            emailPopupInteracted = false;
+
+            emailPopupAutoTimer = setTimeout(function() {
+                if (!emailPopupInteracted) {
+                    hideEmailPopup(true);
+                }
+            }, 10000);
         }
+
+        function showEmailPopupSafely() {
+            const { overlay } = getEmailPopupElements();
+            if (!overlay) return;
+
+            if (
+                sessionStorage.getItem('emailPopupClosed') === '1' ||
+                localStorage.getItem('emailPopupSubmitted') === '1'
+            ) {
+                overlay.classList.add('hidden');
+                overlay.style.display = 'none';
+                return;
+            }
+
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+
+            bindEmailPopupEvents();
+            startEmailPopupAutoHideTimer();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof initializePage === 'function') initializePage();
+            if (typeof loadProducts === 'function') loadProducts();
+            if (typeof setupSearchAndFilter === 'function') setupSearchAndFilter();
+
+            bindEmailPopupEvents();
+
+            setTimeout(function() {
+                showEmailPopupSafely();
+            }, 300);
+        });
     </script>
 </body>
 

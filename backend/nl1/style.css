@@ -2927,6 +2927,150 @@ body {
 .product-card .product-actions {
   display: flex !important;
   flex-direction: row !important;
+
+/* ===== FINAL EMAIL MODAL FIX: close button + mobile form ===== */
+.modal-overlay {
+    z-index: 999999 !important;
+}
+
+.email-modal {
+    position: relative !important;
+}
+
+.modal-close,
+.email-modal .modal-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    min-height: 46px !important;
+    border: none !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    color: #c02676 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 1000000 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    box-shadow: 0 10px 28px rgba(45, 18, 55, 0.25) !important;
+}
+
+.email-modal-form {
+    display: flex !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.email-modal-form input {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 48px !important;
+    box-sizing: border-box !important;
+}
+
+.email-modal-form button {
+    flex: 0 0 auto !important;
+    height: 48px !important;
+    box-sizing: border-box !important;
+}
+
+@media screen and (max-width: 768px) {
+    .email-modal {
+        width: calc(100vw - 24px) !important;
+        max-width: 430px !important;
+        max-height: 88vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        border-radius: 22px !important;
+    }
+
+    .email-modal .modal-body {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: none !important;
+        min-height: 0 !important;
+    }
+
+    .email-modal .modal-visual {
+        height: 145px !important;
+        min-height: 145px !important;
+        max-height: 145px !important;
+        flex: 0 0 145px !important;
+        border-radius: 22px 22px 0 0 !important;
+        overflow: hidden !important;
+    }
+
+    .email-modal .modal-visual img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        object-position: top center !important;
+        display: block !important;
+    }
+
+    .email-modal .modal-copy {
+        padding: 18px 18px 22px !important;
+        gap: 12px !important;
+    }
+
+    .email-modal h3 {
+        font-size: 22px !important;
+        line-height: 1.18 !important;
+        margin: 0 !important;
+    }
+
+    .email-modal .modal-subtitle {
+        font-size: 17px !important;
+        line-height: 1.2 !important;
+    }
+
+    .email-modal-form {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        width: 100% !important;
+        margin-top: 8px !important;
+    }
+
+    .email-modal-form input,
+    .email-modal-form button {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 46px !important;
+        padding: 0 18px !important;
+        font-size: 14px !important;
+        box-sizing: border-box !important;
+        display: block !important;
+    }
+
+    .email-modal-form button {
+        border-radius: 999px !important;
+    }
+
+    .modal-close,
+    .email-modal .modal-close {
+        top: 10px !important;
+        right: 10px !important;
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        font-size: 26px !important;
+        z-index: 1000000 !important;
+    }
+}
   align-items: center !important;
   gap: 10px !important;
   margin-top: 14px !important;
