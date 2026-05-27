@@ -251,6 +251,87 @@
                 showEmailPopupSafely();
             }, 300);
         });
+
+        /* Ensure global closeEmailModal exists for inline onclick handlers */
+        function closeEmailModal() {
+            if (typeof hideEmailPopup === 'function') {
+                hideEmailPopup(true);
+            } else {
+                const overlay = document.querySelector('.modal-overlay');
+                if (!overlay) return;
+                overlay.classList.add('hidden');
+                overlay.style.display = 'none';
+                sessionStorage.setItem('emailPopupClosed', '1');
+            }
+        }
+
+        window.closeEmailModal = closeEmailModal;
+        if (typeof hideEmailPopup === 'function') window.hideEmailPopup = hideEmailPopup;
+
+        /* Extra safe binding: attach handlers if not already bound (prevents duplicate binds) */
+        document.addEventListener('DOMContentLoaded', function () {
+            const closeBtn = document.querySelector('.modal-close');
+
+            if (closeBtn && !closeBtn.dataset.closeBound) {
+                const handleClose = function (event) {
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    closeEmailModal();
+                };
+
+                closeBtn.addEventListener('click', handleClose);
+                closeBtn.addEventListener('touchstart', handleClose, { passive: false });
+                closeBtn.dataset.closeBound = '1';
+            }
+
+            const form = document.querySelector('.email-modal-form');
+            const input = form ? form.querySelector('input[type="email"], input') : null;
+            const message = document.querySelector('.modal-message');
+
+            if (form && input && !form.dataset.submitBound) {
+                form.dataset.submitBound = '1';
+
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const email = input.value.trim();
+
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        if (message) {
+                            message.textContent = 'Vui lòng nhập email hợp lệ.';
+                            message.style.color = '#d32f2f';
+                        }
+                        return;
+                    }
+
+                    if (typeof saveEmailSubscriber === 'function') {
+                        saveEmailSubscriber(email);
+                    } else {
+                        const subscribers = JSON.parse(localStorage.getItem('emailSubscribers') || '[]');
+                        const normalized = email.toLowerCase();
+
+                        if (!subscribers.includes(normalized)) {
+                            subscribers.push(normalized);
+                            localStorage.setItem('emailSubscribers', JSON.stringify(subscribers));
+                        }
+                    }
+
+                    localStorage.setItem('emailPopupSubmitted', '1');
+
+                    if (message) {
+                        message.textContent = 'Cảm ơn bạn! Mã giảm giá của bạn là EMAIL10. Nhập mã này khi thanh toán để được ưu đãi.';
+                        message.style.color = '#7a1f7a';
+                    }
+
+                    setTimeout(function () {
+                        closeEmailModal();
+                    }, 800);
+                });
+            }
+        });
     </script>
 </body>
 
