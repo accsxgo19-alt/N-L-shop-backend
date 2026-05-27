@@ -162,11 +162,17 @@
             const emailInput = document.getElementById('modalEmailInput');
 
             if (closeBtn) {
-                closeBtn.addEventListener('click', function () {
+                const handleCloseClick = function (event) {
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
                     clearTimeout(emailPopupTimer);
                     hideEmailModal();
                     sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
-                });
+                };
+                closeBtn.addEventListener('click', handleCloseClick);
+                closeBtn.addEventListener('touchstart', handleCloseClick, { passive: false });
             }
 
             if (emailInput) {
