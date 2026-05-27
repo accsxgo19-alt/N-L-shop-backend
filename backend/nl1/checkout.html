@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thanh toán - N&L Shop</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-                <div class="navbar-brand">
+            <div class="navbar-brand">
                 <h1>👗 N&L Shop</h1>
             </div>
             <ul class="navbar-menu">
@@ -26,7 +28,7 @@
         <div class="checkout-container">
             <div class="checkout-form">
                 <h2>Thanh Toán</h2>
-                
+
                 <div id="checkoutEmpty" class="empty-message">
                     <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
                 </div>
@@ -57,17 +59,20 @@
                     </div>
                     <div class="form-group">
                         <label for="addressDetail">Số nhà, tên đường:</label>
-                        <input type="text" id="addressDetail" name="addressDetail" placeholder="VD: 123 Nguyễn Trãi" required>
+                        <input type="text" id="addressDetail" name="addressDetail" placeholder="VD: 123 Nguyễn Trãi"
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="addressNote">Ghi chú giao hàng (tầng, cổng,...) :</label>
                         <input type="text" id="addressNote" name="addressNote" placeholder="Nhập ghi chú nếu cần">
                     </div>
-                    <p class="form-note">Dữ liệu tỉnh/thành và phường/xã/đơn vị hành chính được cập nhật theo sáp nhập hành chính hiện tại.</p>
+                    <p class="form-note">Dữ liệu tỉnh/thành và phường/xã/đơn vị hành chính được cập nhật theo sáp nhập
+                        hành chính hiện tại.</p>
                     <div class="form-group map-card">
                         <label>Vị trí trên bản đồ</label>
                         <div id="mapFrameContainer">
-                            <iframe id="checkoutMap" src="https://maps.google.com/maps?q=Việt%20Nam&z=5&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                            <iframe id="checkoutMap" src="https://maps.google.com/maps?q=Việt%20Nam&z=5&output=embed"
+                                allowfullscreen="" loading="lazy"></iframe>
                         </div>
                         <p class="map-note">Bản đồ sẽ cập nhật theo tỉnh/thành và phường/xã/thị trấn bạn chọn.</p>
                     </div>
@@ -230,7 +235,7 @@
 
         function setupAddressSelectors() {
             fetchAddressData();
-            document.getElementById('province').addEventListener('change', function() {
+            document.getElementById('province').addEventListener('change', function () {
                 populateWardList(this.value);
                 updateMapLocation();
             });
@@ -271,7 +276,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const buyNowItem = getBuyNowItem();
             const cart = getCart();
             currentCheckoutItems = buyNowItem ? [buyNowItem] : cart;
@@ -293,7 +298,7 @@
                 applyReturningCustomerPromo();
             }
 
-            document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            document.getElementById('checkoutForm').addEventListener('submit', function (e) {
                 e.preventDefault();
                 processCheckout();
             });
@@ -379,14 +384,22 @@
             const buyNowItem = getBuyNowItem();
             const cart = getCart();
             const checkoutItems = buyNowItem ? [buyNowItem] : cart;
-            const fullname = document.getElementById('fullname').value;
-            const phone = document.getElementById('phone').value;
+            const fullname = document.getElementById('fullname').value.trim();
+            const phone = document.getElementById('phone').value.trim();
             const address = getFullAddress();
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const errEl = document.getElementById('errorMessage');
+
+            errEl.textContent = '';
 
             if (!fullname || !phone || !address || !email) {
-                document.getElementById('errorMessage').textContent = 'Vui lòng điền đầy đủ thông tin địa chỉ và email!';
+                errEl.textContent = 'Vui lòng điền đầy đủ thông tin địa chỉ và email!';
+                return;
+            }
+
+            if (checkoutItems.length === 0) {
+                errEl.textContent = 'Giỏ hàng đang trống, vui lòng chọn sản phẩm trước khi thanh toán.';
                 return;
             }
 
@@ -395,8 +408,9 @@
                 const shipping = subtotal > 500000 ? 0 : 50000;
                 const tax = subtotal * 0.1;
                 const discountCheck = getDiscountInfo(currentDiscountCode, subtotal, shipping, tax, email);
+
                 if (!discountCheck.valid) {
-                    document.getElementById('errorMessage').textContent = discountCheck.description || 'Mã giảm giá không hợp lệ.';
+                    errEl.textContent = discountCheck.description || 'Mã giảm giá không hợp lệ.';
                     return;
                 }
             }
@@ -418,18 +432,56 @@
             if (serverResult.success) {
                 order = serverResult.order;
             } else if (serverResult.localFallback) {
-                order = createOrder(fullname, phone, address, email, paymentMethod, checkoutItems, currentDiscountCode, currentDiscountAmount);
+                order = createOrder(
+                    fullname,
+                    phone,
+                    address,
+                    email,
+                    paymentMethod,
+                    checkoutItems,
+                    currentDiscountCode,
+                    currentDiscountAmount
+                );
             } else {
-                const errEl = document.getElementById('errorMessage');
                 let msg = serverResult.message || 'Đặt hàng thất bại, vui lòng thử lại.';
+
                 if (serverResult.details && Array.isArray(serverResult.details) && serverResult.details.length) {
                     msg += ' ' + serverResult.details.map(d => `${d.field}: ${d.message}`).join('; ');
                 }
+
                 errEl.textContent = msg;
                 return;
             }
 
-            saveOrder(order);
+            const orderCode =
+                order?.id ||
+                order?._id ||
+                order?.orderId ||
+                order?.orderCode ||
+                order?.order?.id ||
+                order?.order?._id ||
+                order?.data?.id ||
+                order?.data?._id ||
+                `ORD-${Date.now()}`;
+
+            const normalizedOrder = {
+                ...order,
+                id: String(orderCode),
+                userEmail: order.userEmail || email,
+                fullname: order.fullname || fullname,
+                phone: order.phone || phone,
+                shippingAddress: order.shippingAddress || order.address || address,
+                email: order.email || email,
+                paymentMethod: order.paymentMethod || paymentMethod,
+                items: order.items || checkoutItems,
+                status: order.status || 'processing',
+                date: order.date || order.createdAt || new Date().toISOString(),
+                discountCode: order.discountCode || currentDiscountCode || '',
+                discountAmount: order.discountAmount || currentDiscountAmount || 0,
+                total: order.total || order.totalAmount || calculateOrderTotal(checkoutItems),
+            };
+
+            saveOrder(normalizedOrder);
             updateProductSales(checkoutItems);
 
             if (buyNowItem) {
@@ -438,17 +490,18 @@
                 clearCart();
                 sessionStorage.removeItem('cartDiscount');
             }
+
             currentDiscountCode = '';
             currentDiscountAmount = 0;
 
-            alert('Đặt hàng thành công! Mã đơn hàng: ' + order.id);
+            alert('Đặt hàng thành công! Mã đơn hàng: ' + normalizedOrder.id);
             window.location.href = 'orders.html';
         }
 
         async function submitOrderToServer(orderData) {
             try {
-                // if logged in, use authenticated /api/orders endpoint which builds order from user's cart
                 let response;
+
                 if (isLoggedIn()) {
                     response = await fetch(`${API_BASE}/api/orders`, {
                         method: 'POST',
@@ -466,21 +519,38 @@
                 }
 
                 const result = await response.json().catch(() => ({}));
+
                 if (!response.ok) {
                     if (response.status === 404 || response.status === 502 || response.status === 503) {
                         return { success: false, localFallback: true };
                     }
-                    return { success: false, message: result.error || 'Lỗi khi gửi đơn hàng.', details: result.details || null };
+
+                    return {
+                        success: false,
+                        message: result.error || result.message || 'Lỗi khi gửi đơn hàng.',
+                        details: result.details || null
+                    };
                 }
 
-                return { success: true, order: result };
+                const order =
+                    result.order ||
+                    result.data ||
+                    result.newOrder ||
+                    result.createdOrder ||
+                    result;
+
+                return {
+                    success: true,
+                    order
+                };
             } catch (error) {
-                return { success: false, localFallback: true };
+                return {
+                    success: false,
+                    localFallback: true
+                };
             }
         }
     </script>
 </body>
+
 </html>
-
-
-
