@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết sản phẩm - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng (<span id="cartCount">0</span>)</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="page-label">Chi tiết sản phẩm</div>
+            <h2>Thông tin sản phẩm VIP</h2>
+            <p>Xem chi tiết sản phẩm, điều chỉnh số lượng, thêm vào giỏ hoặc thanh toán ngay lập tức.</p>
+        </div>
+
+        <div id="productDetailContainer"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            loadProductDetail();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+

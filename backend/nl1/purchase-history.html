@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử mua hàng - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+                <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="page-label">Lịch sử mua hàng</div>
+            <h2>Các mặt hàng bạn đã mua</h2>
+            <p>Xem lại danh sách sản phẩm, tổng số lượng, chi phí đã tiêu và ngày mua gần nhất.</p>
+        </div>
+
+        <div id="historyContainer"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializePage();
+            if (!isLoggedIn()) {
+                alert('Vui lòng đăng nhập để xem lịch sử mua hàng!');
+                window.location.href = 'login.html';
+                return;
+            }
+            await loadPurchaseHistory();
+        });
+
+        async function loadPurchaseHistory() {
+            const historyContainer = document.getElementById('historyContainer');
+            const history = await getUserPurchaseHistory();
+
+            if (!history || history.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="empty-message">
+                        <p>Bạn chưa có đơn hàng đã giao. <a href="index.html">Tiếp tục mua sắm</a></p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyContainer.innerHTML = history.map(item => {
+                return `
+                    <div class="history-card">
+                        <div class="history-header">
+                            <div class="history-image">${item.product ? renderProductImage(item.product.image) : ''}</div>
+                            <div>
+                                <h3>${item.product ? escapeHtml(item.product.name) : 'Sản phẩm'}</h3>
+                                <p class="history-product-category">${item.product ? escapeHtml(item.product.category) : ''}</p>
+                            </div>
+                        </div>
+                        <div class="history-row">
+                            <span>Số lượng đã mua</span>
+                            <strong>${item.quantity}</strong>
+                        </div>
+                        <div class="history-row">
+                            <span>Tổng chi phí</span>
+                            <strong>${item.total.toLocaleString()}đ</strong>
+                        </div>
+                        <div class="history-row">
+                            <span>Mua lần cuối</span>
+                            <strong>${new Date(item.lastDate).toLocaleDateString('vi-VN')}</strong>
+                        </div>
+                        <div class="history-orders">
+                            ${item.orders.map(order => `
+                                <div class="history-order-item">
+                                    <div>Đơn #${order.orderId}</div>
+                                    <div>${order.quantity} cái</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N&L Shop - Top in Vietnam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <h1>🛍️ N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng (<span id="cartCount">0</span>)</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Search & Filter -->
+    <div class="container search-section">
+        <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm...">
+        <select id="categoryFilter">
+            <option value="">Tất cả danh mục</option>
+            <option value="Áo">Áo</option>
+            <option value="Quần">Quần</option>
+            <option value="Váy">Váy</option>
+            <option value="Giày">Giày</option>
+            <option value="Phụ kiện">Phụ kiện</option>
+        </select>
+    </div>
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+        <div class="hero-content">
+            <div class="hero-label">Bộ sưu tập VIP</div>
+            <h2>Thời trang cao cấp N&L tại Việt Nam</h2>
+            <p>Khám phá những sản phẩm thiết kế mới nhất với chất liệu sang trọng, màu sắc bắt mắt và phong cách thời
+                thượng.</p>
+            <div class="hero-cta">
+                <a href="#products" class="btn btn-primary">Xem trọn bộ sưu tập</a>
+                <a href="register.html" class="btn btn-secondary">Trở thành khách hàng VIP</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="container">
+        <h2 id="products" class="section-title">Sản phẩm nổi bật</h2>
+        <p>Chọn lựa những mẫu sản phẩm thời trang hot nhất, phù hợp với phong cách cao cấp và sang trọng.</p>
+        <div class="products-grid" id="productsContainer">
+            <!-- Products will be loaded here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <div id="emailModalOverlay" class="modal-overlay hidden">
+        <div class="email-modal">
+            <button class="modal-close" onclick="closeEmailModal()">×</button>
+            <div class="modal-body">
+                <div class="modal-visual">
+                    <img src="img/anhpopup.png" alt="Ưu đãi thời trang" />
+                </div>
+                <div class="modal-copy">
+                    <p class="modal-subtitle">✨ Xin chào quý khách hàng</p>
+                    <h3>Để lại email của bạn để nhận thông tin khuyến mãi mới nhất nhé</h3>
+                    <form id="emailModalForm" class="email-modal-form">
+                        <input type="email" id="modalEmailInput" placeholder="Nhập email tại đây" required>
+                        <button type="submit" class="btn btn-primary">Gửi ngay</button>
+                    </form>
+                    <div id="modalMessage" class="modal-message"></div>
+                    <p class="modal-note">Chúng tôi cam kết chỉ gửi ưu đãi giá trị, không spam.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function () {
+            initializePage();
+            loadProducts();
+            setupSearchAndFilter();
+            setTimeout(showEmailModal, 5000);
+            document.getElementById('emailModalForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const emailInput = document.getElementById('modalEmailInput');
+                const messageElement = document.getElementById('modalMessage');
+                const email = emailInput.value.trim();
+                if (!email) {
+                    emailInput.focus();
+                    return;
+                }
+
+                const normalizedEmail = saveEmailSubscriber(email);
+                const discountCode = getRecommendedCustomerDiscountCode(normalizedEmail);
+                sessionStorage.setItem('popupDiscountCode', discountCode);
+
+                if (discountCode === 'LOYAL10') {
+                    messageElement.textContent = `Chào mừng trở lại! Bạn nhận được mã ${discountCode} - Giảm 10% cho mỗi sản phẩm khi mua 5 món trở lên.`;
+                } else {
+                    messageElement.textContent = `Cảm ơn bạn! Mã giảm giá của bạn là ${discountCode}. Nhập mã này khi thanh toán để được ưu đãi.`;
+                }
+                messageElement.style.color = '#7a1f7a';
+                messageElement.style.fontWeight = '700';
+                emailInput.value = '';
+            });
+        });
+
+        function showEmailModal() {
+            document.getElementById('emailModalOverlay').classList.remove('hidden');
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModalOverlay').classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>

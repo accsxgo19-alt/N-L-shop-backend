@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tài khoản của tôi - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Account Content -->
+    <div class="container">
+        <div class="account-container">
+            <h2>Thông Tin Tài Khoản</h2>
+            
+            <form id="accountForm">
+                <div class="form-group">
+                    <label for="fullname">Họ và tên:</label>
+                    <input type="text" id="fullname" name="fullname" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Số điện thoại:</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Địa chỉ:</label>
+                    <textarea id="address" name="address" required></textarea>
+                </div>
+
+                <h3>Thay đổi mật khẩu</h3>
+                <div class="form-group">
+                    <label for="currentPassword">Mật khẩu hiện tại:</label>
+                    <input type="password" id="currentPassword" name="currentPassword">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới:</label>
+                    <input type="password" id="newPassword" name="newPassword">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu mới:</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            
+            if (!isLoggedIn()) {
+                alert('Vui lòng đăng nhập!');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = getCurrentUser();
+            document.getElementById('fullname').value = user.fullname || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('address').value = user.address || '';
+
+            document.getElementById('accountForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                updateAccount();
+            });
+        });
+
+        function updateAccount() {
+            const fullname = document.getElementById('fullname').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            errorMsg.textContent = '';
+            successMsg.textContent = '';
+
+            if (!fullname || !phone || !address) {
+                errorMsg.textContent = 'Vui lòng điền đầy đủ thông tin!';
+                return;
+            }
+
+            // Update basic info
+            const user = getCurrentUser();
+            user.fullname = fullname;
+            user.phone = phone;
+            user.address = address;
+
+            // Change password if provided
+            if (newPassword) {
+                if (!currentPassword) {
+                    errorMsg.textContent = 'Vui lòng nhập mật khẩu hiện tại!';
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    errorMsg.textContent = 'Mật khẩu mới không trùng khớp!';
+                    return;
+                }
+                if (!verifyPassword(user.email, currentPassword)) {
+                    errorMsg.textContent = 'Mật khẩu hiện tại không đúng!';
+                    return;
+                }
+                user.password = newPassword;
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            }
+
+            saveCurrentUser(user);
+            successMsg.textContent = 'Cập nhật thông tin thành công!';
+            setTimeout(() => {
+                successMsg.textContent = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+

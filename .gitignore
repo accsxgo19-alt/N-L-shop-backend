@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+npm-debug.log*
+*.db
+backend/data/*.db
+logs/
+pids/
+.vscode/
+.idea/
+coverage/
+*.log

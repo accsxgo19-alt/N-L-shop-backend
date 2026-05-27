@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Admin - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page">
+    <nav class="navbar">
+        <div class="container">
+                <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="admin-dashboard-panel">
+            <div class="page-header">
+                <div class="page-label">Khu vực quản lý</div>
+                <h2>Dashboard quản lý Admin</h2>
+                <p>Quản lý sản phẩm, đơn hàng, tài khoản, doanh số và tương tác khách hàng.</p>
+            </div>
+
+            <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>Doanh số hôm nay</h3>
+                <p id="salesToday">0đ</p>
+            </div>
+            <div class="dashboard-card">
+                <h3>Doanh số tháng</h3>
+                <p id="salesMonth">0đ</p>
+            </div>
+            <div class="dashboard-card">
+                <h3>Doanh số năm</h3>
+                <p id="salesYear">0đ</p>
+            </div>
+            <div class="dashboard-card">
+                <h3>Lợi nhuận ước tính</h3>
+                <p id="profitEstimate">0đ</p>
+            </div>
+            <div class="dashboard-card">
+                <h3>Tỉ lệ quay lại</h3>
+                <p id="repeatRate">0%</p>
+            </div>
+            <div class="dashboard-card">
+                <h3>Độ hài lòng</h3>
+                <p id="satisfactionRate">0%</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section category-section">
+            <div class="section-header">
+                <div>
+                    <span class="badge vip">Xếp hạng</span>
+                    <h3>Thống kê theo danh mục</h3>
+                </div>
+                <span class="panel-tag muted">VIP Insight</span>
+            </div>
+            <div id="categoryStats" class="category-stats"></div>
+        </div>
+
+        <div class="dashboard-grid vip-dashboard-grid">
+            <div class="dashboard-panel vip-card">
+                <div class="vip-panel-header">
+                    <div>
+                        <span class="badge vip">Top</span>
+                        <h3>Sản phẩm bán chạy</h3>
+                    </div>
+                    <span class="panel-tag">HOT</span>
+                </div>
+                <div id="bestSellers" class="vip-stat-list"></div>
+            </div>
+            <div class="dashboard-panel vip-card">
+                <div class="vip-panel-header">
+                    <div>
+                        <span class="badge vip">Trend</span>
+                        <h3>Sản phẩm ít tương tác</h3>
+                    </div>
+                    <span class="panel-tag muted">Tăng tốc</span>
+                </div>
+                <div id="lowInteraction" class="vip-stat-list"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section admin-flex">
+            <div class="admin-card admin-wide">
+                <h3>Quản lý sản phẩm</h3>
+                <div class="product-management-grid">
+                    <div class="product-premium-banner">
+                        <div class="banner-content">
+                            <span class="badge vip">VIP PRO</span>
+                            <div>
+                                <h4>Phiên bản quản lý cao cấp</h4>
+                                <p class="form-subtitle">Tối ưu hiển thị, cập nhật giá và ảnh sản phẩm chuyên nghiệp.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-editor-body">
+                        <form id="productForm" class="admin-form premium-form">
+                            <div class="form-fields">
+                                <div class="form-row">
+                                    <div>
+                                        <label for="productName">Tên sản phẩm</label>
+                                        <input type="text" id="productName" placeholder="Tên sản phẩm" required>
+                                    </div>
+                                    <div>
+                                        <label for="productCategory">Danh mục</label>
+                                        <input type="text" id="productCategory" placeholder="Danh mục" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div>
+                                        <label for="productPrice">Giá sản phẩm</label>
+                                        <input type="number" id="productPrice" placeholder="Giá" required>
+                                    </div>
+                                    <div>
+                                        <label for="productImage">Ảnh sản phẩm (URL / Emoji)</label>
+                                        <input type="text" id="productImage" placeholder="Icon/Emoji" required>
+                                    </div>
+                                </div>
+                                <div class="form-row form-row-full">
+                                    <div>
+                                        <label for="productImageFile">Hoặc chọn ảnh từ máy</label>
+                                        <input type="file" id="productImageFile" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div>
+                                        <label for="productRating">Đánh giá</label>
+                                        <input type="number" id="productRating" placeholder="Đánh giá" step="0.1" min="0" max="5" required>
+                                    </div>
+                                    <div>
+                                        <label for="productSold">Đã bán</label>
+                                        <input type="number" id="productSold" placeholder="Đã bán" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="form-row form-row-full">
+                                    <div>
+                                        <label for="productDescription">Mô tả sản phẩm</label>
+                                        <textarea id="productDescription" placeholder="Mô tả" rows="4" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary btn-xl">Lưu thay đổi sản phẩm</button>
+                                    <input type="hidden" id="productId" value="">
+                                </div>
+                            </div>
+                        </form>
+                        <div class="preview-panel">
+                            <div class="preview-card" id="productPreview">
+                                <div class="preview-top">
+                                    <span class="badge premium">PREMIUM</span>
+                                    <div class="preview-image" id="previewImage">🎁</div>
+                                </div>
+                                <div class="preview-body">
+                                    <div class="preview-category" id="previewCategory">Danh mục</div>
+                                    <h3 id="previewName">Tên sản phẩm</h3>
+                                    <div class="preview-price" id="previewPrice">0đ</div>
+                                    <div class="preview-meta">
+                                        <span id="previewRating">⭐ 0.0</span>
+                                        <span id="previewSold">0 đã bán</span>
+                                    </div>
+                                    <p id="previewDescription">Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="productMessage" class="success-message"></div>
+                <div id="productTable" class="admin-table"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section admin-flex">
+            <div class="admin-card admin-medium">
+                <h3>Thời gian sử dụng trang</h3>
+                <div id="activitySummary" class="stats-list"></div>
+                <div id="activityLog" class="activity-log"></div>
+            </div>
+            <div class="admin-card admin-medium">
+                <h3>Đơn chờ duyệt</h3>
+                <div id="pendingOrders" class="admin-table"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section admin-flex">
+            <div class="admin-card admin-medium">
+                <h3>Quản lý đơn hàng</h3>
+                <div id="orderTable" class="admin-table"></div>
+            </div>
+            <div class="admin-card admin-medium">
+                <h3>Quản lý tài khoản</h3>
+                <div id="userTable" class="admin-table"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section admin-flex">
+            <div class="admin-card admin-medium">
+                <h3>Lịch sử giao dịch</h3>
+                <div id="transactionTable" class="admin-table"></div>
+            </div>
+            <div class="admin-card admin-medium admin-chat">
+                <h3>Chatbox Admin</h3>
+                <div id="chatMessages" class="chat-messages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="Nhập tin nhắn...">
+                    <button class="btn btn-primary" id="sendChatBtn">Gửi</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Li�n h?: nlshop213@gmail.com | �i?n tho?i: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            if (!isAdmin()) {
+                alert('Chỉ quản trị viên mới được truy cập khu vực này.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadAdminDashboard();
+            renderProductTable();
+            renderUserTable();
+            renderPendingOrders();
+            renderOrderTable();
+            renderTransactionTable();
+            renderActivityData();
+            renderChatMessages();
+
+            document.getElementById('productForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveProductFromForm();
+            });
+
+            const previewFields = ['productName', 'productCategory', 'productPrice', 'productImage', 'productRating', 'productSold', 'productDescription'];
+            previewFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', updateProductPreview);
+                }
+            });
+            const imageFileInput = document.getElementById('productImageFile');
+            if (imageFileInput) {
+                imageFileInput.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const imageInput = document.getElementById('productImage');
+                        if (imageInput) {
+                            imageInput.value = reader.result;
+                        }
+                        updateProductPreview();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            updateProductPreview();
+
+            document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
+            document.getElementById('chatInput').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendChatMessage();
+                }
+            });
+
+            // realtime admin events
+            document.addEventListener('admin:newOrder', function(ev) {
+                renderPendingOrders();
+                renderOrderTable();
+                const order = ev.detail && ev.detail.order;
+                if (order) {
+                    alert('Đơn hàng mới: ' + (order._id || order.id));
+                }
+            });
+        });
+
+        function updateProductPreview() {
+            const name = document.getElementById('productName')?.value.trim() || 'Tên sản phẩm';
+            const category = document.getElementById('productCategory')?.value.trim() || 'Danh mục';
+            const price = Number(document.getElementById('productPrice')?.value) || 0;
+            const image = document.getElementById('productImage')?.value.trim() || '🎁';
+            const rating = Number(document.getElementById('productRating')?.value) || 4.5;
+            const sold = Number(document.getElementById('productSold')?.value) || 0;
+            const description = document.getElementById('productDescription')?.value.trim() || 'Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.';
+
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewCategory').textContent = category;
+            document.getElementById('previewPrice').textContent = formatCurrency(price);
+            document.getElementById('previewRating').textContent = `⭐ ${rating.toFixed(1)}`;
+            document.getElementById('previewSold').textContent = `${sold} đã bán`;
+            document.getElementById('previewDescription').textContent = description;
+            const previewImage = document.getElementById('previewImage');
+            if (previewImage) {
+                const isUrl = image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:image/');
+                previewImage.innerHTML = isUrl ? `<img src="${image}" alt="Ảnh sản phẩm">` : image || '🎁';
+            }
+        }
+
+        function formatCurrency(value) {
+            return value.toLocaleString('vi-VN') + 'đ';
+        }
+
+        function loadAdminDashboard() {
+            const summary = getSalesSummary();
+            document.getElementById('salesToday').textContent = formatCurrency(summary.salesToday);
+            document.getElementById('salesMonth').textContent = formatCurrency(summary.salesThisMonth);
+            document.getElementById('salesYear').textContent = formatCurrency(summary.salesThisYear);
+            document.getElementById('profitEstimate').textContent = formatCurrency(getProfitEstimate());
+            document.getElementById('repeatRate').textContent = getRepeatPurchaseRate() + '%';
+            document.getElementById('satisfactionRate').textContent = getCustomerSatisfactionRate() + '%';
+
+            const categories = getSalesByCategory();
+            const categoryStats = Object.keys(categories).map(category => {
+                return `<div class="category-card"><strong>${category}</strong><span>${formatCurrency(categories[category] || 0)}</span></div>`;
+            }).join('');
+            document.getElementById('categoryStats').innerHTML = categoryStats || '<div class="empty-message">Chưa có thống kê danh mục.</div>';
+
+            const bestSellers = getTopSellingProducts(5).map((product, index) => `
+                <div class="vip-stat-item">
+                    <span class="stat-badge">#${index + 1}</span>
+                    <strong>${product.name}</strong>
+                    <span>${product.sold} bán</span>
+                </div>
+            `).join('');
+            document.getElementById('bestSellers').innerHTML = bestSellers || '<div class="empty-message">Chưa có sản phẩm bán chạy.</div>';
+
+            const lowInteraction = getLowInteractionProducts(180).map((product, index) => `
+                <div class="vip-stat-item">
+                    <span class="stat-badge">#${index + 1}</span>
+                    <strong>${product.name}</strong>
+                    <span>Đã bán ${product.sold}</span>
+                </div>
+            `).join('');
+            document.getElementById('lowInteraction').innerHTML = lowInteraction || '<div class="empty-message">Tất cả sản phẩm đều đang hoạt động tốt.</div>';
+        }
+
+        async function saveProductFromForm() {
+            const idInput = document.getElementById('productId');
+            const name = document.getElementById('productName').value.trim();
+            const category = document.getElementById('productCategory').value.trim();
+            const price = Number(document.getElementById('productPrice').value);
+            const image = document.getElementById('productImage').value.trim();
+            const rating = Number(document.getElementById('productRating').value);
+            const sold = Number(document.getElementById('productSold').value);
+            const description = document.getElementById('productDescription').value.trim();
+            const message = document.getElementById('productMessage');
+
+            if (!name || !category || !price || !image || !description) {
+                message.textContent = 'Vui lòng điền đầy đủ thông tin sản phẩm.';
+                return;
+            }
+
+            if (isAdmin() && getCurrentUserToken()) {
+                try {
+                    const productPayload = {
+                        name,
+                        image,
+                        price,
+                        category,
+                        description,
+                        stock: Number(document.getElementById('productStock')?.value) || 10,
+                    };
+
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders(),
+                    };
+
+                    let response;
+                    if (idInput.value) {
+                        response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(idInput.value)}`, {
+                            method: 'PUT',
+                            headers,
+                            body: JSON.stringify(productPayload),
+                        });
+                    } else {
+                        response = await fetch(`${API_BASE}/api/products`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(productPayload),
+                        });
+                    }
+
+                    if (!response.ok) {
+                        const result = await response.json().catch(() => ({}));
+                        throw new Error(result.message || 'Không thể lưu sản phẩm lên server.');
+                    }
+
+                    await syncProductsFromServer();
+                    renderProductTable();
+                    loadAdminDashboard();
+                    document.getElementById('productForm').reset();
+                    idInput.value = '';
+                    updateProductPreview();
+                    message.textContent = idInput.value ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
+                    setTimeout(() => message.textContent = '', 3000);
+                    return;
+                } catch (err) {
+                    console.warn(err);
+                    message.textContent = 'Không thể lưu sản phẩm lên server, đang chuyển về chế độ lưu cục bộ.';
+                }
+            }
+
+            const products = getAllProducts();
+            if (idInput.value) {
+                const index = products.findIndex(item => item.id === idInput.value);
+                if (index !== -1) {
+                    products[index] = {
+                        ...products[index],
+                        name,
+                        category,
+                        price,
+                        image,
+                        rating,
+                        sold,
+                        description
+                    };
+                }
+                message.textContent = 'Cập nhật sản phẩm thành công.';
+            } else {
+                products.push({
+                    id: 'PRD-' + Date.now(),
+                    name,
+                    category,
+                    price,
+                    image,
+                    rating,
+                    sold,
+                    createdAt: new Date().toISOString().split('T')[0],
+                    description
+                });
+                message.textContent = 'Thêm sản phẩm mới thành công.';
+            }
+
+            saveProducts(products);
+            renderProductTable();
+            loadAdminDashboard();
+            document.getElementById('productForm').reset();
+            idInput.value = '';
+            updateProductPreview();
+            setTimeout(() => message.textContent = '', 3000);
+        }
+
+        async function deleteProduct(productId) {
+            if (isAdmin() && getCurrentUserToken()) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
+                        method: 'DELETE',
+                        headers: {
+                            ...getAuthHeaders(),
+                        },
+                    });
+                    if (!response.ok) {
+                        const result = await response.json().catch(() => ({}));
+                        throw new Error(result.message || 'Không thể xóa sản phẩm trên server.');
+                    }
+                    await syncProductsFromServer();
+                    renderProductTable();
+                    loadAdminDashboard();
+                    return;
+                } catch (err) {
+                    console.warn(err);
+                }
+            }
+
+            const products = getAllProducts().filter(product => product.id !== productId);
+            saveProducts(products);
+            renderProductTable();
+            loadAdminDashboard();
+        }
+
+        function renderProductTable() {
+            const products = getAllProducts();
+            const rows = products.map(product => {
+                return `
+                    <div class="admin-row vip-table-row vip-product-row">
+                        <div class="row-id">${product.id}</div>
+                        <div class="row-product">
+                            <span class="product-chip">
+                                <span class="product-icon">${renderProductIcon(product.image)}</span>
+                                <span>${escapeHtml(product.name)}</span>
+                            </span>
+                        </div>
+                        <div>${escapeHtml(product.category)}</div>
+                        <div>${formatCurrency(product.price)}</div>
+                        <div>${product.sold || 0}</div>
+                        <div>${escapeHtml(product.createdAt)}</div>
+                        <div class="admin-action-buttons vip-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="window.location.href='product.html?id=${product.id}&edit=1'">Sửa</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${product.id}')">Xóa</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('productTable').innerHTML = products.length ? `
+                <div class="admin-row header vip-table-header vip-product-header">
+                    <div>ID</div>
+                    <div>Tên</div>
+                    <div>Danh mục</div>
+                    <div>Giá</div>
+                    <div>Đã bán</div>
+                    <div>Ngày tạo</div>
+                    <div>Hành động</div>
+                </div>
+                ${rows}
+            ` : '<div class="empty-message">Chưa có sản phẩm.</div>';
+        }
+
+        function editProduct(productId) {
+            const product = getProductById(productId);
+            if (!product) return;
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productImage').value = product.image;
+            document.getElementById('productRating').value = product.rating;
+            document.getElementById('productSold').value = product.sold || 0;
+            document.getElementById('productDescription').value = product.description;
+            updateProductPreview();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderProductIcon(image) {
+            const value = String(image || '').trim();
+            const isImageUrl = value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:image/');
+            if (isImageUrl) {
+                return `<img class="product-icon-image" src="${escapeHtml(value)}" alt="Ảnh sản phẩm">`;
+            }
+            return escapeHtml(value || '🛍️');
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function deleteProduct(productId) {
+            const products = getAllProducts().filter(product => product.id !== productId);
+            saveProducts(products);
+            renderProductTable();
+            loadAdminDashboard();
+        }
+
+        function renderUserTable() {
+            const users = getAllUsers();
+            const rows = users.map((user, index) => {
+                return `
+                    <div class="admin-row vip-table-row vip-user-row">
+                        <div class="row-id">${index + 1}</div>
+                        <div class="row-product">
+                            <span class="user-chip"><span class="user-icon">👤</span>${escapeHtml(user.fullname)}</span>
+                        </div>
+                        <div>${escapeHtml(user.email)}</div>
+                        <div><span class="status-badge ${user.role === 'admin' ? 'badge-admin' : 'badge-user'}">${escapeHtml(user.role || 'customer')}</span></div>
+                        <div>${new Date(user.createdAt).toLocaleDateString('vi-VN')}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('userTable').innerHTML = users.length ? `
+                <div class="admin-row header vip-table-header">
+                    <div>#</div>
+                    <div>Họ tên</div>
+                    <div>Email</div>
+                    <div>Quyền</div>
+                    <div>Ngày tạo</div>
+                </div>
+                ${rows}
+            ` : '<div class="empty-message">Chưa có tài khoản.</div>';
+        }
+
+        function renderPendingOrders() {
+            const orders = getAllOrders().filter(order => order.status === 'pending');
+            const rows = orders.map((order, index) => {
+                return `
+                    <div class="admin-row vip-table-row vip-order-row">
+                        <div class="row-id">${index + 1}</div>
+                        <div>${order.id}</div>
+                        <div>${new Date(order.date).toLocaleDateString('vi-VN')}</div>
+                        <div>${escapeHtml(order.userEmail)}</div>
+                        <div>${formatCurrency(order.total)}</div>
+                        <div><button class="btn btn-primary btn-sm" onclick="approveOrder('${order.id}')">Duyệt đơn</button></div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('pendingOrders').innerHTML = orders.length ? `
+                <div class="admin-row header vip-table-header">
+                    <div>#</div>
+                    <div>ID</div>
+                    <div>Ngày</div>
+                    <div>Khách hàng</div>
+                    <div>Tổng</div>
+                    <div>Hành động</div>
+                </div>
+                ${rows}
+            ` : '<div class="empty-message">Không có đơn chờ duyệt.</div>';
+        }
+
+        const ORDER_STATUS_LABELS = {
+            pending: 'Chờ xử lý',
+            processing: 'Đang xử lý',
+            shipped: 'Đã gửi',
+            delivered: 'Đã giao',
+            cancelled: 'Đã hủy'
+        };
+
+        const ORDER_STATUS_KEYS = Object.fromEntries(
+            Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => [label, key])
+        );
+
+        function renderOrderTable() {
+            const orders = getAllOrders();
+
+            const rows = orders.map((order, index) => {
+                const currentStatusKey = ORDER_STATUS_KEYS[order.status] || order.status;
+                const statusOptions = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => {
+                    return `<option value="${status}" ${currentStatusKey === status ? 'selected' : ''}>${ORDER_STATUS_LABELS[status]}</option>`;
+                }).join('');
+                return `
+                    <div class="admin-row vip-table-row vip-order-row">
+                        <div class="row-id">${index + 1}</div>
+                        <div>${order.id}</div>
+                        <div>${new Date(order.date).toLocaleDateString('vi-VN')}</div>
+                        <div>${escapeHtml(order.userEmail)}</div>
+                        <div>${formatCurrency(order.total)}</div>
+                        <div class="status-control">
+                            <span class="status-badge ${currentStatusKey}">${ORDER_STATUS_LABELS[currentStatusKey] || order.status}</span>
+                            <select onchange="changeOrderStatus('${order.id}', this.value)">${statusOptions}</select>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('orderTable').innerHTML = orders.length ? `
+                <div class="admin-row header vip-table-header">
+                    <div>#</div>
+                    <div>ID</div>
+                    <div>Ngày</div>
+                    <div>Khách hàng</div>
+                    <div>Tổng</div>
+                    <div>Trạng thái</div>
+                </div>
+                ${rows}
+            ` : '<div class="empty-message">Chưa có đơn hàng.</div>';
+        }
+
+        function approveOrder(orderId) {
+            const orders = getAllOrders();
+            const order = orders.find(item => item.id === orderId);
+            if (!order) return;
+            order.status = 'processing';
+            saveAllOrders(orders);
+            renderPendingOrders();
+            renderOrderTable();
+            renderTransactionTable();
+            loadAdminDashboard();
+        }
+
+        function changeOrderStatus(orderId, newStatus) {
+            const orders = getAllOrders();
+            const order = orders.find(item => item.id === orderId);
+            if (!order) return;
+            const normalizedStatus = ORDER_STATUS_KEYS[newStatus] || newStatus;
+            if (!ORDER_STATUS_LABELS[normalizedStatus]) return;
+            order.status = normalizedStatus;
+            saveAllOrders(orders);
+            renderOrderTable();
+            renderPendingOrders();
+            renderTransactionTable();
+            loadAdminDashboard();
+        }
+
+        function renderTransactionTable() {
+            const orders = getAllOrders();
+            const rows = orders.map((order, index) => {
+                const currentStatusKey = ORDER_STATUS_KEYS[order.status] || order.status;
+                return `
+                    <div class="admin-row vip-table-row vip-transaction-row">
+                        <div class="row-id">${index + 1}</div>
+                        <div>${order.id}</div>
+                        <div>${new Date(order.date).toLocaleDateString('vi-VN')}</div>
+                        <div>${escapeHtml(order.userEmail)}</div>
+                        <div>${formatCurrency(order.total)}</div>
+                        <div><span class="status-badge ${currentStatusKey}">${ORDER_STATUS_LABELS[currentStatusKey] || order.status}</span></div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('transactionTable').innerHTML = orders.length ? `
+                <div class="admin-row header vip-table-header">
+                    <div>#</div>
+                    <div>ID</div>
+                    <div>Ngày</div>
+                    <div>Khách hàng</div>
+                    <div>Tổng</div>
+                    <div>Trạng thái</div>
+                </div>
+                ${rows}
+            ` : '<div class="empty-message">Chưa có lịch sử giao dịch.</div>';
+        }
+
+        function renderActivityData() {
+            const summary = getActivitySummary();
+            document.getElementById('activitySummary').innerHTML = `
+                <div class="stat-item"><strong>Tổng phiên</strong><span>${summary.sessions}</span></div>
+                <div class="stat-item"><strong>Người dùng</strong><span>${summary.uniqueUsers}</span></div>
+                <div class="stat-item"><strong>Tổng thời gian</strong><span>${Math.floor(summary.totalTime / 60)} phút</span></div>
+            `;
+            const events = summary.logs.slice(-10).reverse().map(log => `
+                <div class="activity-item">
+                    <div><strong>${log.fullname}</strong> (${log.userEmail})</div>
+                    <div>${new Date(log.createdAt).toLocaleString('vi-VN')}</div>
+                    <div>Thời gian: ${log.duration || 0}s</div>
+                </div>
+            `).join('');
+            document.getElementById('activityLog').innerHTML = events || '<div class="empty-message">Chưa có hoạt động.</div>';
+        }
+
+        function renderChatMessages() {
+            const messages = getAdminChatMessages();
+            document.getElementById('chatMessages').innerHTML = messages.map(item => `
+                <div class="chat-message"><strong>${item.user}:</strong> ${item.message}<span>${new Date(item.createdAt).toLocaleString('vi-VN')}</span></div>
+            `).join('') || '<div class="empty-message">Chưa có tin nhắn.</div>';
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+
+        function sendChatMessage() {
+            const messageInput = document.getElementById('chatInput');
+            const text = messageInput.value.trim();
+            if (!text) return;
+            const user = getCurrentUser();
+            saveAdminChatMessage({
+                user: user?.fullname || 'Admin',
+                message: text,
+                createdAt: new Date().toISOString()
+            });
+            messageInput.value = '';
+            renderChatMessages();
+        }
+    </script>
+</body>
+</html>
+
+
+
+

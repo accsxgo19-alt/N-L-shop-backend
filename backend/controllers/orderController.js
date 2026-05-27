@@ -1,0 +1,108 @@
+const Order = require('../models/Order');
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+
+const createOrder = async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
+    }
+
+    // allow optional customer info in body (shipping/payment)
+    const {
+      fullname,
+      phone,
+      address,
+      paymentMethod,
+      discountCode = '',
+      discountAmount = 0,
+    } = req.body || {};
+
+    const orderItems = cart.items.map((item) => ({
+      product: item.product._id,
+      name: item.product.name,
+      price: item.product.price,
+      quantity: item.quantity,
+    }));
+
+    const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    await Promise.all(
+      cart.items.map(async (item) => {
+        const product = await Product.findById(item.product._id);
+        if (!product) {
+          throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
+        }
+        if (product.stock < item.quantity) {
+          throw new Error(`Sản phẩm ${product.name} không đủ số lượng trong kho.`);
+        }
+        product.stock -= item.quantity;
+        await product.save();
+      })
+    );
+
+    const order = await Order.create({
+      user: req.user._id,
+      customerName: fullname || req.user.name || req.user.fullname || req.user.email,
+      customerEmail: req.user.email,
+      customerPhone: phone || req.user.phone || '',
+      shippingAddress: address || req.user.address || '',
+      paymentMethod: paymentMethod || 'cash',
+      discountCode: String(discountCode || '').trim().toUpperCase(),
+      discountAmount: Number(discountAmount) || 0,
+      items: orderItems,
+      totalAmount,
+      status: 'pending',
+    });
+
+    cart.items = [];
+    await cart.save();
+
+    // emit realtime order events
+    try {
+      const io = req.app.locals.io;
+      if (io) {
+        io.to(String(req.user._id)).emit('orderCreated', order);
+        io.to('admins').emit('newOrder', order);
+      }
+    } catch (e) {
+      console.error('Emit order events failed', e);
+    }
+
+    res.status(201).json({ message: 'Tạo đơn hàng thành công.', order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message || 'Lỗi khi tạo đơn hàng.' });
+  }
+};
+
+const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Lỗi khi lấy lịch sử đơn hàng.' });
+  }
+};
+
+const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    if (!order) {
+      return res.status(404).json({ message: 'Đơn hàng không tồn tại.' });
+    }
+
+    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Bạn không có quyền xem đơn hàng này.' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Lỗi khi lấy chi tiết đơn hàng.' });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, getOrderById };

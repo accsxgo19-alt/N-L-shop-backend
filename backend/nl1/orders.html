@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn hàng của tôi - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+                <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Orders Content -->
+    <div class="container">
+        <h2>Đơn Hàng Của Tôi</h2>
+        
+        <div id="noOrders" class="empty-message">
+            <p>Bạn chưa có đơn hàng nào. <a href="index.html">Bắt đầu mua sắm</a></p>
+        </div>
+
+        <div id="ordersContainer" style="display:none;">
+            <div id="ordersList"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializePage();
+            
+            if (!isLoggedIn()) {
+                alert('Vui lòng đăng nhập để xem đơn hàng!');
+                window.location.href = 'login.html';
+                return;
+            }
+            const orders = await fetchUserOrders();
+            displayOrders(orders || []);
+        });
+
+        async function fetchUserOrders() {
+            if (isLoggedIn()) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/orders/my`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...getAuthHeaders(),
+                        },
+                    });
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (error) {
+                    console.warn('Không thể tải đơn hàng từ server:', error);
+                }
+            }
+            // fallback to cached/local orders
+            return getUserOrders();
+        }
+        function displayOrders(orders) {
+            const noOrders = document.getElementById('noOrders');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const ordersList = document.getElementById('ordersList');
+
+            if (orders.length === 0) {
+                noOrders.style.display = 'block';
+                ordersContainer.style.display = 'none';
+            } else {
+                noOrders.style.display = 'none';
+                ordersContainer.style.display = 'block';
+                ordersList.innerHTML = '';
+
+                orders.forEach(order => {
+                    const orderDiv = document.createElement('div');
+                    orderDiv.className = 'order-card';
+                    const orderCode = order.id || order._id || '';
+                    
+                    const statusColor = {
+                        'pending': '#ff9800',
+                        'processing': '#2196f3',
+                        'shipped': '#4caf50',
+                        'delivered': '#8bc34a',
+                        'cancelled': '#f44336'
+                    };
+
+                    const statusText = {
+                        'pending': 'Chờ xác nhận',
+                        'processing': 'Đang xử lý',
+                        'shipped': 'Đã gửi',
+                        'delivered': 'Đã giao',
+                        'cancelled': 'Đã hủy'
+                    };
+
+                    const orderStatusColor = statusColor[order.status] || '#757575';
+                    const orderStatusText = statusText[order.status] || 'Đang cập nhật';
+
+                    let itemsHtml = '';
+                    order.items.forEach(item => {
+                        const product = getProductById(item.productId || item.product);
+                        const itemName = product?.name || item.name || 'Sản phẩm';
+                        const itemPrice = product?.price || item.price || 0;
+                        itemsHtml += `<div class="order-item">
+                                ${itemName} x${item.quantity} - ${(itemPrice * item.quantity).toLocaleString()}đ
+                            </div>`;
+                    });
+
+                    const deliveryStatusMessage = getOrderStatusMessage(order);
+                    const progressSteps = ['pending', 'processing', 'shipped', 'delivered'];
+                    const progressHtml = progressSteps.map(step => {
+                        const isActive = progressSteps.indexOf(step) <= progressSteps.indexOf(order.status);
+                        const stepText = {
+                            'pending': 'Chờ xác nhận',
+                            'processing': 'Đang xử lý',
+                            'shipped': 'Đã gửi',
+                            'delivered': 'Đã giao'
+                        }[step];
+                        return `<span class="order-progress-step${isActive ? ' active' : ''}">${stepText}</span>`;
+                    }).join('');
+
+                    orderDiv.innerHTML = `
+                        <div class="order-header">
+                            <div>
+                                <strong>Đơn hàng #${orderCode}</strong>
+                                <div class="order-date">${new Date(order.date || order.createdAt || '').toLocaleDateString('vi-VN')}</div>
+                            </div>
+                            <div class="order-status" style="background-color: ${orderStatusColor}; color: white;">
+                                ${orderStatusText}
+                            </div>
+                        </div>
+                        <div class="order-progress">${progressHtml}</div>
+                        <div class="order-delivery-message">${deliveryStatusMessage}</div>
+                        <div class="order-items">
+                            ${itemsHtml}
+                        </div>
+                        <div class="order-footer">
+                            <div class="order-info">
+                                <strong>Giao đến:</strong> ${order.address || order.shippingAddress || ''}
+                            </div>
+                            <div class="order-total">
+                                <strong>Tổng:</strong> ${Math.floor(order.total || order.totalAmount || 0).toLocaleString()}đ
+                            </div>
+                        </div>
+                    `;
+                    ordersList.appendChild(orderDiv);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+

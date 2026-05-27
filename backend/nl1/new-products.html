@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sản phẩm mới nhất & bán chạy - N&L Shop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+                <div class="navbar-brand">
+                <h1>👗 N&L Shop</h1>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="index.html#products">Sản phẩm</a></li>
+                <li><a href="new-products.html">Mới nhất</a></li>
+                <li class="user-menu">
+                    <a id="userDisplay" class="user-display" href="login.html">👤 Đăng nhập</a>
+                    <div class="dropdown">
+                        <a href="account.html" id="accountLink" style="display:none">Tài khoản</a>
+                        <a href="orders.html" id="ordersLink" style="display:none">Đơn hàng</a>
+                        <a href="purchase-history.html" id="historyLink" style="display:none">Lịch sử mua hàng</a>
+                        <a href="admin.html" id="adminLink" style="display:none">Quản lý</a>
+                        <button id="logoutBtn" style="display:none" onclick="logout()">Đăng xuất</button>
+                        <a href="login.html" id="loginLink">Đăng nhập</a>
+                        <a href="register.html" id="registerLink">Đăng ký</a>
+                    </div>
+                </li>
+                <li><a href="cart.html" class="cart-link">🛒 Giỏ hàng</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="page-label">Ưu tiên hàng đầu</div>
+            <h2>Sản phẩm mới nhất & bán chạy</h2>
+            <p>Khám phá những item đang dẫn đầu xu hướng hiện nay và những mặt hàng hot được khách hàng săn đón nhiều nhất.</p>
+        </div>
+
+        <section class="section-block">
+            <div class="section-head">
+                <h3>Sản phẩm mới nhất</h3>
+                <p>Những mẫu mới vừa được cập nhật vào bộ sưu tập N&L Shop.</p>
+            </div>
+            <div class="products-grid" id="newestProductsContainer"></div>
+        </section>
+
+        <section class="section-block">
+            <div class="section-head">
+                <h3>Sản phẩm bán chạy</h3>
+                <p>Những mặt hàng yêu thích nhất, lượt bán cao và luôn được khách hàng đánh giá tốt.</p>
+            </div>
+            <div class="products-grid" id="bestSellingProductsContainer"></div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            loadNewProductSections();
+        });
+
+        function loadNewProductSections() {
+            const newest = getNewestProducts(6);
+            const bestSelling = getBestSellingProducts(6);
+
+            const newestContainer = document.getElementById('newestProductsContainer');
+            const bestSellingContainer = document.getElementById('bestSellingProductsContainer');
+
+            if (newestContainer) {
+                newestContainer.innerHTML = '';
+                newest.forEach(product => {
+                    newestContainer.appendChild(createProductCard(product));
+                });
+            }
+
+            if (bestSellingContainer) {
+                bestSellingContainer.innerHTML = '';
+                bestSelling.forEach(product => {
+                    bestSellingContainer.appendChild(createProductCard(product));
+                });
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+

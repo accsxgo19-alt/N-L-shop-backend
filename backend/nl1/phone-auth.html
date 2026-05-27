@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập/Đăng ký bằng số điện thoại</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            min-height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8f1ff 0%, #fff 46%, #f6f0ff 100%);
+            color: #24114a;
+        }
+        .auth-page {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-left {
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 30px 70px rgba(82, 16, 132, 0.15);
+            padding: 36px 40px;
+        }
+        .auth-left h1 {
+            margin: 0 0 14px;
+            font-size: 34px;
+            line-height: 1.05;
+        }
+        .auth-left p {
+            margin: 0 0 28px;
+            color: #6f5f8d;
+            font-size: 16px;
+            line-height: 1.75;
+        }
+        .form-panel {
+            display: grid;
+            gap: 18px;
+        }
+        .form-panel .input-group {
+            display: grid;
+            gap: 10px;
+        }
+        .form-panel label {
+            font-size: 14px;
+            color: #5f4c7f;
+        }
+        .form-panel input {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid #e9e1f5;
+            padding: 16px 18px;
+            font-size: 15px;
+            background: #fbf8ff;
+            color: #2a1e46;
+        }
+        .primary-btn {
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #8b3dff, #4f20c8);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.25s ease;
+        }
+        .primary-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7b2ce0, #3d18b0);
+        }
+        .primary-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .message-box {
+            min-height: 24px;
+            font-size: 14px;
+            color: #da1e37;
+            font-weight: 600;
+        }
+        .success-message {
+            color: #1f7a28;
+        }
+        .otp-countdown {
+            font-size: 13px;
+            color: #1f7a28;
+            min-height: 18px;
+            margin-top: 4px;
+            text-align: right;
+            font-weight: 500;
+        }
+        .auth-link {
+            text-align: center;
+            margin-top: 10px;
+            color: #5f4c7f;
+            font-size: 14px;
+        }
+        .auth-link a {
+            color: #5c3f9c;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        @media (max-width: 768px) {
+            .auth-page {
+                padding: 20px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-left">
+            <h1 id="pageTitle">Xác thực số điện thoại</h1>
+            <p id="pageSubtitle">Sử dụng số điện thoại để đăng nhập hoặc đăng ký nhanh chóng.</p>
+            <div class="form-panel">
+                <div class="input-group" id="nameGroup" style="display:none;">
+                    <label for="phoneName">Họ và tên</label>
+                    <input id="phoneName" type="text" placeholder="Nhập họ và tên của bạn">
+                </div>
+                <div class="input-group">
+                    <label for="phoneNumber">Số điện thoại</label>
+                    <input id="phoneNumber" type="tel" placeholder="Nhập số điện thoại">
+                </div>
+                <button type="button" id="sendOtpBtn" class="primary-btn">Gửi mã OTP</button>
+                <div class="input-group">
+                    <label for="phoneOtp">Mã OTP</label>
+                    <input id="phoneOtp" type="text" placeholder="Nhập mã OTP">
+                </div>
+                <div id="countdownText" class="otp-countdown"></div>
+                <button type="button" id="verifyOtpBtn" class="primary-btn">Xác thực OTP</button>
+                <div id="otpError" class="message-box"></div>
+                <p class="auth-link"><a id="backLink" href="login.html">Quay lại trang trước</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode') === 'register' ? 'register' : 'login';
+        const titleEl = document.getElementById('pageTitle');
+        const subtitleEl = document.getElementById('pageSubtitle');
+        const backLink = document.getElementById('backLink');
+        const nameGroup = document.getElementById('nameGroup');
+        const phoneInput = document.getElementById('phoneNumber');
+        const nameInput = document.getElementById('phoneName');
+        const otpInput = document.getElementById('phoneOtp');
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const countdownText = document.getElementById('countdownText');
+        const otpError = document.getElementById('otpError');
+
+        let countdownInterval = null;
+        let remainingSeconds = 0;
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function resetMessages() {
+            otpError.textContent = '';
+            countdownText.textContent = '';
+        }
+
+        function updateCountdown() {
+            if (remainingSeconds > 0) {
+                countdownText.textContent = `Mã OTP còn hiệu lực trong ${remainingSeconds}s.`;
+                sendOtpBtn.disabled = true;
+            } else {
+                countdownText.textContent = 'Bạn có thể gửi lại mã OTP.';
+                sendOtpBtn.disabled = false;
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function startCountdown() {
+            remainingSeconds = 30;
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            updateCountdown();
+            countdownInterval = setInterval(() => {
+                remainingSeconds -= 1;
+                updateCountdown();
+            }, 1000);
+        }
+
+        function eachMode() {
+            if (mode === 'register') {
+                titleEl.textContent = 'Đăng ký bằng số điện thoại';
+                subtitleEl.textContent = 'Nhập số điện thoại và mã OTP để tạo tài khoản nhanh.';
+                backLink.href = 'register.html';
+                nameGroup.style.display = 'grid';
+                sendOtpBtn.textContent = 'Gửi mã OTP';
+                verifyOtpBtn.textContent = 'Xác thực và đăng ký';
+            } else {
+                titleEl.textContent = 'Đăng nhập bằng số điện thoại';
+                subtitleEl.textContent = 'Nhập số điện thoại và mã OTP để đăng nhập nhanh.';
+                backLink.href = 'login.html';
+                nameGroup.style.display = 'none';
+                sendOtpBtn.textContent = 'Gửi mã OTP';
+                verifyOtpBtn.textContent = 'Xác thực và đăng nhập';
+            }
+        }
+
+        function sendOtp() {
+            resetMessages();
+            const phone = phoneInput.value.trim();
+            const result = sendPhoneOtp(phone);
+            if (!result.success) {
+                otpError.textContent = result.message;
+                return;
+            }
+            countdownText.textContent = result.message;
+            startCountdown();
+        }
+
+        function verifyOtp() {
+            resetMessages();
+            const phone = phoneInput.value.trim();
+            const code = otpInput.value.trim();
+            if (!phone || !code) {
+                otpError.textContent = 'Vui lòng nhập số điện thoại và mã OTP.';
+                return;
+            }
+            if (!verifyPhoneOtp(phone, code)) {
+                otpError.textContent = 'OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.';
+                return;
+            }
+            if (mode === 'register') {
+                loginOrRegisterWithPhone(phone, nameInput.value.trim() || undefined);
+            } else {
+                loginOrRegisterWithPhone(phone);
+            }
+            window.location.href = 'index.html';
+        }
+
+        sendOtpBtn.addEventListener('click', sendOtp);
+        verifyOtpBtn.addEventListener('click', verifyOtp);
+
+        eachMode();
+    </script>
+</body>
+</html>
