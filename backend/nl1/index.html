@@ -269,12 +269,46 @@
         forceShowPopup();
     };
 
-    document.addEventListener('DOMContentLoaded', function () {
-        bindPopupEvents();
+    document.addEventListener('DOMContentLoaded', async function () {
+        // Reset filters and search inputs
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
 
-        setTimeout(function () {
-            forceShowPopup();
-        }, 300);
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        if (categoryFilter) {
+            categoryFilter.value = '';
+        }
+
+        // Initialize page and load products
+        if (typeof initializePage === 'function') {
+            initializePage();
+        }
+
+        if (typeof syncProductsFromServer === 'function') {
+            try {
+                await syncProductsFromServer();
+            } catch (err) {
+                console.warn('syncProductsFromServer error:', err);
+            }
+        }
+
+        if (typeof loadProducts === 'function') {
+            loadProducts('', '');
+        }
+
+        if (typeof setupSearchAndFilter === 'function') {
+            setupSearchAndFilter();
+        }
+
+        // Show email popup
+        if (typeof showEmailPopupSafely === 'function') {
+            setTimeout(function () {
+                showEmailPopupSafely();
+            }, 300);
+        }
     });
 
     window.addEventListener('load', function () {

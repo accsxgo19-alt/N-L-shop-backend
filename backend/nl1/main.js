@@ -1830,14 +1830,20 @@ function setupSearchAndFilter() {
 
     if (!searchInput || !categoryFilter) return;
 
+    // Prevent binding listeners multiple times
+    if (searchInput.dataset.bound === '1' && categoryFilter.dataset.bound === '1') return;
+
     function updateProducts() {
-        const searchTerm = searchInput.value;
-        const category = categoryFilter.value;
+        const searchTerm = searchInput.value || '';
+        const category = categoryFilter.value || '';
         loadProducts(searchTerm, category);
     }
 
     searchInput.addEventListener('input', updateProducts);
     categoryFilter.addEventListener('change', updateProducts);
+
+    searchInput.dataset.bound = '1';
+    categoryFilter.dataset.bound = '1';
 }
 
 // ==================== INITIALIZATION ====================
