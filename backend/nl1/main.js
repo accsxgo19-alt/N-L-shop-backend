@@ -1,10 +1,10 @@
 // ==================== PRODUCTS DATA ====================
 const LOCAL_BACKEND_ORIGIN = 'http://localhost:5000';
 const API_BASE = window.location.protocol === 'file:'
-  ? LOCAL_BACKEND_ORIGIN
-  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? LOCAL_BACKEND_ORIGIN
-    : window.location.origin;
+    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? LOCAL_BACKEND_ORIGIN
+        : window.location.origin;
 
 const STORAGE_PRODUCTS_KEY = 'products';
 const STORAGE_ACTIVITY_KEY = 'activityLogs';
@@ -238,7 +238,7 @@ function getAllUsers() {
 function saveUser(user) {
     const users = getAllUsers();
     const existingUser = users.find(u => u.email === user.email);
-    
+
     if (!existingUser) {
         users.push(user);
         localStorage.setItem('users', JSON.stringify(users));
@@ -425,7 +425,7 @@ function getCart() {
                     document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }
     return cached;
 }
@@ -443,45 +443,49 @@ function addToCart(productId, quantity = 1) {
             headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
             body: JSON.stringify({ productId: normalizedProductId, quantity }),
         })
-        .then(async (r) => {
-            if (!r.ok) {
-                const errorData = await r.json().catch(() => null);
-                throw errorData || new Error('Thêm sản phẩm vào giỏ hàng thất bại.');
-            }
-            return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() });
-        })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (data && Array.isArray(data.items)) {
-                const serverCart = data.items.map(i => ({
-                    productId: String(i.id || i.product || i._id),
-                    quantity: i.quantity,
-                    name: i.name || (i.product && i.product.name) || '',
-                    price: i.price || (i.product && i.product.price) || 0,
-                    image: i.image || (i.product && i.product.image) || ''
+            .then(async (r) => {
+                if (!r.ok) {
+                    const errorData = await r.json().catch(() => null);
+                    throw errorData || new Error('Thêm sản phẩm vào giỏ hàng thất bại.');
+                }
+                return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() });
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && Array.isArray(data.items)) {
+                    const serverCart = data.items.map(i => ({
+                        productId: String(i.id || i.product || i._id),
+                        quantity: i.quantity,
+                        name: i.name || (i.product && i.product.name) || '',
+                        price: i.price || (i.product && i.product.price) || 0,
+                        image: i.image || (i.product && i.product.image) || ''
+                    }));
+                    saveCart(serverCart);
+                    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
+                    return data;
+                }
+                throw new Error('Giỏ hàng từ server không hợp lệ.');
+            })
+            .catch((e) => {
+                console.error('Backend cart add failed, fallback to local cart:', e);
+                const cart = getCart();
+                const existing = cart.find(item => String(item.productId) === normalizedProductId);
+                if (existing) {
+                    existing.quantity += quantity;
+                } else {
+                    cart.push({ productId: normalizedProductId, quantity });
+                }
+                saveCart(cart);
+                document.dispatchEvent(new CustomEvent('cart:updated', {
+                    detail: {
+                        cart, total: cart.reduce((sum, item) => {
+                            const product = getProductById(item.productId);
+                            return sum + ((product?.price || 0) * item.quantity);
+                        }, 0)
+                    }
                 }));
-                saveCart(serverCart);
-                document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
-                return data;
-            }
-            throw new Error('Giỏ hàng từ server không hợp lệ.');
-        })
-        .catch((e) => {
-            console.error('Backend cart add failed, fallback to local cart:', e);
-            const cart = getCart();
-            const existing = cart.find(item => String(item.productId) === normalizedProductId);
-            if (existing) {
-                existing.quantity += quantity;
-            } else {
-                cart.push({ productId: normalizedProductId, quantity });
-            }
-            saveCart(cart);
-            document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart, total: cart.reduce((sum, item) => {
-                const product = getProductById(item.productId);
-                return sum + ((product?.price || 0) * item.quantity);
-            }, 0) } }));
-            return null;
-        });
+                return null;
+            });
     }
     const cart = getCart();
     const existing = cart.find(item => String(item.productId) === normalizedProductId);
@@ -491,10 +495,14 @@ function addToCart(productId, quantity = 1) {
         cart.push({ productId: normalizedProductId, quantity });
     }
     saveCart(cart);
-    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart, total: cart.reduce((sum, item) => {
-        const product = getProductById(item.productId);
-        return sum + ((product?.price || 0) * item.quantity);
-    }, 0) } }));
+    document.dispatchEvent(new CustomEvent('cart:updated', {
+        detail: {
+            cart, total: cart.reduce((sum, item) => {
+                const product = getProductById(item.productId);
+                return sum + ((product?.price || 0) * item.quantity);
+            }, 0)
+        }
+    }));
 }
 
 function removeFromCartItem(productId) {
@@ -504,108 +512,120 @@ function removeFromCartItem(productId) {
             method: 'DELETE',
             headers: getAuthHeaders(),
         })
-        .then(async (r) => {
-            if (!r.ok) {
-                const errorData = await r.json().catch(() => null);
-                throw errorData || new Error('Xóa sản phẩm khỏi giỏ hàng thất bại.');
-            }
-            return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() });
-        })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (data && Array.isArray(data.items)) {
-                const serverCart = data.items.map(i => ({
-                    productId: String(i.id || i.product || i._id),
-                    quantity: i.quantity,
-                    name: i.name || (i.product && i.product.name) || '',
-                    price: i.price || (i.product && i.product.price) || 0,
-                    image: i.image || (i.product && i.product.image) || ''
-                }));
-                saveCart(serverCart);
-                document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
-                return data;
-            }
-            throw new Error('Giỏ hàng từ server không hợp lệ.');
-        }).catch((e) => {
-            console.error('Backend remove cart failed, fallback to local cart:', e);
-            let cart = getCart();
-            cart = cart.filter(item => String(item.productId) !== normalizedProductId);
-            saveCart(cart);
-            document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart, total: cart.reduce((sum, item) => {
-                const product = getProductById(item.productId);
-                return sum + ((product?.price || 0) * item.quantity);
-            }, 0) } }));
-            return null;
-        });
-    }
-    let cart = getCart();
-    cart = cart.filter(item => String(item.productId) !== normalizedProductId);
-    saveCart(cart);
-    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart, total: cart.reduce((sum, item) => {
-        const product = getProductById(item.productId);
-        return sum + ((product?.price || 0) * item.quantity);
-    }, 0) } }));
-}
-
-function updateCartQuantity(productId, change) {
-    const normalizedProductId = String(productId);
-    if (isLoggedIn()) {
-        return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() })
-        .then(r => r.ok ? r.json() : { items: [] })
-        .then(data => {
-            const serverCart = (data.items || []).map(i => ({ productId: String(i.id || i.product || i._id), quantity: i.quantity }));
-            const item = serverCart.find(i => String(i.productId) === normalizedProductId);
-            const newQuantity = (item ? item.quantity : 0) + change;
-            const requestOptions = newQuantity <= 0 ? {
-                method: 'DELETE',
-                headers: getAuthHeaders(),
-            } : {
-                method: 'PUT',
-                headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
-                body: JSON.stringify({ quantity: newQuantity }),
-            };
-            return fetch(`${API_BASE}/api/cart/${encodeURIComponent(normalizedProductId)}`, requestOptions)
             .then(async (r) => {
                 if (!r.ok) {
                     const errorData = await r.json().catch(() => null);
-                    throw errorData || new Error('Cập nhật giỏ hàng thất bại.');
+                    throw errorData || new Error('Xóa sản phẩm khỏi giỏ hàng thất bại.');
                 }
                 return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() });
             })
             .then(r => r.ok ? r.json() : null)
-            .then(data2 => {
-                if (data2 && Array.isArray(data2.items)) {
-                    const serverCart2 = data2.items.map(i => ({
+            .then(data => {
+                if (data && Array.isArray(data.items)) {
+                    const serverCart = data.items.map(i => ({
                         productId: String(i.id || i.product || i._id),
                         quantity: i.quantity,
                         name: i.name || (i.product && i.product.name) || '',
                         price: i.price || (i.product && i.product.price) || 0,
                         image: i.image || (i.product && i.product.image) || ''
                     }));
-                    saveCart(serverCart2);
-                    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart2, total: data2.totalAmount } }));
-                    return data2;
+                    saveCart(serverCart);
+                    document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
+                    return data;
                 }
                 throw new Error('Giỏ hàng từ server không hợp lệ.');
+            }).catch((e) => {
+                console.error('Backend remove cart failed, fallback to local cart:', e);
+                let cart = getCart();
+                cart = cart.filter(item => String(item.productId) !== normalizedProductId);
+                saveCart(cart);
+                document.dispatchEvent(new CustomEvent('cart:updated', {
+                    detail: {
+                        cart, total: cart.reduce((sum, item) => {
+                            const product = getProductById(item.productId);
+                            return sum + ((product?.price || 0) * item.quantity);
+                        }, 0)
+                    }
+                }));
+                return null;
             });
-        }).catch((e) => {
-            console.error('Backend update cart failed, fallback to local cart:', e);
-            const cart = getCart();
-            const item = cart.find(i => String(i.productId) === normalizedProductId);
-            if (item) {
-                item.quantity += change;
-                let newCart = cart;
-                if (item.quantity <= 0) {
-                    newCart = cart.filter(i => String(i.productId) !== normalizedProductId);
+    }
+    let cart = getCart();
+    cart = cart.filter(item => String(item.productId) !== normalizedProductId);
+    saveCart(cart);
+    document.dispatchEvent(new CustomEvent('cart:updated', {
+        detail: {
+            cart, total: cart.reduce((sum, item) => {
+                const product = getProductById(item.productId);
+                return sum + ((product?.price || 0) * item.quantity);
+            }, 0)
+        }
+    }));
+}
+
+function updateCartQuantity(productId, change) {
+    const normalizedProductId = String(productId);
+    if (isLoggedIn()) {
+        return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() })
+            .then(r => r.ok ? r.json() : { items: [] })
+            .then(data => {
+                const serverCart = (data.items || []).map(i => ({ productId: String(i.id || i.product || i._id), quantity: i.quantity }));
+                const item = serverCart.find(i => String(i.productId) === normalizedProductId);
+                const newQuantity = (item ? item.quantity : 0) + change;
+                const requestOptions = newQuantity <= 0 ? {
+                    method: 'DELETE',
+                    headers: getAuthHeaders(),
+                } : {
+                    method: 'PUT',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
+                    body: JSON.stringify({ quantity: newQuantity }),
+                };
+                return fetch(`${API_BASE}/api/cart/${encodeURIComponent(normalizedProductId)}`, requestOptions)
+                    .then(async (r) => {
+                        if (!r.ok) {
+                            const errorData = await r.json().catch(() => null);
+                            throw errorData || new Error('Cập nhật giỏ hàng thất bại.');
+                        }
+                        return fetch(`${API_BASE}/api/cart`, { headers: getAuthHeaders() });
+                    })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data2 => {
+                        if (data2 && Array.isArray(data2.items)) {
+                            const serverCart2 = data2.items.map(i => ({
+                                productId: String(i.id || i.product || i._id),
+                                quantity: i.quantity,
+                                name: i.name || (i.product && i.product.name) || '',
+                                price: i.price || (i.product && i.product.price) || 0,
+                                image: i.image || (i.product && i.product.image) || ''
+                            }));
+                            saveCart(serverCart2);
+                            document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart2, total: data2.totalAmount } }));
+                            return data2;
+                        }
+                        throw new Error('Giỏ hàng từ server không hợp lệ.');
+                    });
+            }).catch((e) => {
+                console.error('Backend update cart failed, fallback to local cart:', e);
+                const cart = getCart();
+                const item = cart.find(i => String(i.productId) === normalizedProductId);
+                if (item) {
+                    item.quantity += change;
+                    let newCart = cart;
+                    if (item.quantity <= 0) {
+                        newCart = cart.filter(i => String(i.productId) !== normalizedProductId);
+                    }
+                    saveCart(newCart);
+                    document.dispatchEvent(new CustomEvent('cart:updated', {
+                        detail: {
+                            cart: newCart, total: newCart.reduce((sum, it) => {
+                                const product = getProductById(it.productId);
+                                return sum + ((product?.price || 0) * it.quantity);
+                            }, 0)
+                        }
+                    }));
                 }
-                saveCart(newCart);
-                document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: newCart, total: newCart.reduce((sum, it) => {
-                    const product = getProductById(it.productId);
-                    return sum + ((product?.price || 0) * it.quantity);
-                }, 0) } }));
-            }
-            return null;
-        });
+                return null;
+            });
     }
     const cart = getCart();
     const item = cart.find(i => String(i.productId) === normalizedProductId);
@@ -616,10 +636,14 @@ function updateCartQuantity(productId, change) {
             newCart = cart.filter(i => String(i.productId) !== normalizedProductId);
         }
         saveCart(newCart);
-        document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: newCart, total: newCart.reduce((sum, it) => {
-            const product = getProductById(it.productId);
-            return sum + ((product?.price || 0) * it.quantity);
-        }, 0) } }));
+        document.dispatchEvent(new CustomEvent('cart:updated', {
+            detail: {
+                cart: newCart, total: newCart.reduce((sum, it) => {
+                    const product = getProductById(it.productId);
+                    return sum + ((product?.price || 0) * it.quantity);
+                }, 0)
+            }
+        }));
     }
 }
 
@@ -705,7 +729,7 @@ function createOrder(fullname, phone, address, email, paymentMethod, cartItems, 
         discountAmount: discountAmount || 0,
         total
     };
-    
+
     saveOrder(order);
     updateProductSales(cartItems);
     return order;
@@ -737,10 +761,10 @@ function getOrderStatusMessage(order) {
     const deliveryDate = getOrderDeliveryDate(order);
     const displayDate = deliveryDate ? formatDateString(deliveryDate) : 'đang xử lý';
     const messages = {
-        'pending': `Đơn hàng đang chờ xác nhận. Dự kiến giao vào khoảng ${displayDate}.`, 
+        'pending': `Đơn hàng đang chờ xác nhận. Dự kiến giao vào khoảng ${displayDate}.`,
         'processing': `Đơn hàng đang được chuẩn bị. Dự kiến giao vào khoảng ${displayDate}.`,
         'shipped': `Đơn hàng đã rời kho và đang giao đến bạn. Dự kiến giao vào khoảng ${displayDate}.`,
-        'delivered': `Đơn hàng đã giao vào khoảng ${displayDate}.`, 
+        'delivered': `Đơn hàng đã giao vào khoảng ${displayDate}.`,
         'cancelled': 'Đơn hàng đã bị hủy.'
     };
     return messages[order.status] || `Đơn hàng đang cập nhật. Dự kiến giao vào khoảng ${displayDate}.`;
@@ -915,7 +939,7 @@ function calculateOrderTotal(cartItems) {
             subtotal += product.price * item.quantity;
         }
     });
-    
+
     const shipping = subtotal > 500000 ? 0 : 50000;
     const tax = subtotal * 0.1;
     return subtotal + shipping + tax;
@@ -1000,7 +1024,7 @@ async function register(fullname, phone, address, email, password) {
         await syncProductsFromServer();
         // initialize realtime socket and fetch orders
         initSocket();
-        await fetchAndStoreUserOrders().catch(() => {});
+        await fetchAndStoreUserOrders().catch(() => { });
         return true;
     } catch (error) {
         // Fallback to localStorage registration if backend unavailable
@@ -1096,7 +1120,7 @@ function initSocialAuth() {
     }
 
     if (typeof FB === 'undefined') {
-        window.fbAsyncInit = function() {
+        window.fbAsyncInit = function () {
             FB.init({
                 appId: FB_APP_ID,
                 cookie: true,
@@ -1153,9 +1177,9 @@ async function handleGoogleAccessToken(accessToken) {
             createdAt: new Date().toISOString(),
         };
         saveSocialLoginUser(user);
-        await syncProductsFromServer().catch(() => {});
+        await syncProductsFromServer().catch(() => { });
         initSocket();
-        await fetchAndStoreUserOrders().catch(() => {});
+        await fetchAndStoreUserOrders().catch(() => { });
         if (googleLoginResolve) {
             googleLoginResolve(user);
             googleLoginResolve = null;
@@ -1182,9 +1206,9 @@ function facebookLogin() {
         facebookLoginResolve = resolve;
         facebookLoginReject = reject;
 
-        FB.login(function(response) {
+        FB.login(function (response) {
             if (response.authResponse) {
-                FB.api('/me', { fields: 'id,name,email,picture' }, async function(profile) {
+                FB.api('/me', { fields: 'id,name,email,picture' }, async function (profile) {
                     if (!profile) {
                         if (facebookLoginReject) {
                             facebookLoginReject(new Error('Không lấy được thông tin Facebook.'));
@@ -1204,9 +1228,9 @@ function facebookLogin() {
                         createdAt: new Date().toISOString(),
                     };
                     saveSocialLoginUser(user);
-                    await syncProductsFromServer().catch(() => {});
+                    await syncProductsFromServer().catch(() => { });
                     initSocket();
-                    await fetchAndStoreUserOrders().catch(() => {});
+                    await fetchAndStoreUserOrders().catch(() => { });
                     if (facebookLoginResolve) {
                         facebookLoginResolve(user);
                         facebookLoginResolve = null;
@@ -1314,9 +1338,9 @@ async function syncProductsFromServer() {
 function filterProducts(searchTerm = '', category = '') {
     return getAllProducts().filter(product => {
         const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
+            product.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchCategory = category === '' || product.category === category;
-        
+
         return matchSearch && matchCategory;
     });
 }
@@ -1541,7 +1565,7 @@ initializeProductData();
 syncProductsFromServer();
 // initialize realtime connection and user orders cache if logged in
 initSocket();
-fetchAndStoreUserOrders().catch(() => {});
+fetchAndStoreUserOrders().catch(() => { });
 
 async function addProductDetailToCart() {
     const productId = getQueryParam('id');
@@ -1625,14 +1649,14 @@ function setupUserMenu() {
     const userDisplay = document.getElementById('userDisplay');
     if (!userMenu || !userDisplay) return;
 
-    userDisplay.addEventListener('click', function(event) {
+    userDisplay.addEventListener('click', function (event) {
         if (isLoggedIn()) {
             event.preventDefault();
             userMenu.classList.toggle('dropdown-open');
         }
     });
 
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (!userMenu.contains(event.target)) {
             userMenu.classList.remove('dropdown-open');
         }
@@ -1648,13 +1672,13 @@ function updateUserDisplay() {
     const logoutBtn = document.getElementById('logoutBtn');
     const loginLink = document.getElementById('loginLink');
     const registerLink = document.getElementById('registerLink');
-    
+
     if (isLoggedIn()) {
         const user = getCurrentUser();
         userDisplay.textContent = user.fullname || user.email;
         userDisplay.href = 'account.html';
         userMenu.classList.add('logged-in');
-        
+
         if (accountLink) accountLink.style.display = 'block';
         if (ordersLink) ordersLink.style.display = 'block';
         if (historyLink) historyLink.style.display = 'block';
@@ -1690,15 +1714,15 @@ function updateCartCount() {
 function loadProducts(searchTerm = '', category = '') {
     const container = document.getElementById('productsContainer');
     if (!container) return;
-    
+
     const filteredProducts = filterProducts(searchTerm, category);
     container.innerHTML = '';
-    
+
     if (filteredProducts.length === 0) {
         container.innerHTML = '<div class="empty-message">Không tìm thấy sản phẩm nào</div>';
         return;
     }
-    
+
     filteredProducts.forEach(product => {
         const card = createProductCard(product);
         container.appendChild(card);
@@ -1708,16 +1732,19 @@ function loadProducts(searchTerm = '', category = '') {
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    
-    const stars = '⭐'.repeat(Math.floor(product.rating)) + (product.rating % 1 ? '½' : '');
-    const salesInfo = product.sold ? `<div class="product-meta">Đã bán ${product.sold}</div>` : '';
-    
+
+    const rating = Number(product.rating) || 0;
+    const sold = Number(product.sold) || 0;
+    const stars = rating > 0 ? '⭐'.repeat(Math.floor(rating)) + (rating % 1 ? '½' : '') : '';
+    const ratingInfo = rating > 0 ? `<div class="product-rating">${stars} ${rating}</div>` : '';
+    const salesInfo = sold > 0 ? `<div class="product-meta">Đã bán ${sold}</div>` : '';
+
     card.innerHTML = `
         <div class="product-image">${renderProductImage(product.image)}</div>
         <div class="product-info">
             <div class="product-name">${product.name}</div>
             <div class="product-category">${product.category}</div>
-            <div class="product-rating">${stars} ${product.rating}</div>
+            ${ratingInfo}
             ${salesInfo}
             <div class="product-price">${product.price.toLocaleString()}đ</div>
             <div class="product-actions">
@@ -1726,7 +1753,7 @@ function createProductCard(product) {
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
@@ -1776,15 +1803,15 @@ async function quickAdd(productId) {
 function setupSearchAndFilter() {
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
-    
+
     if (!searchInput || !categoryFilter) return;
-    
+
     function updateProducts() {
         const searchTerm = searchInput.value;
         const category = categoryFilter.value;
         loadProducts(searchTerm, category);
     }
-    
+
     searchInput.addEventListener('input', updateProducts);
     categoryFilter.addEventListener('change', updateProducts);
 }
@@ -1823,7 +1850,7 @@ function initializeDemoData() {
         };
         saveUser(demoUser);
     }
-    
+
     const orders = getAllOrders();
     if (orders.length === 0) {
         const demoOrder = {
