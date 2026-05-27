@@ -618,7 +618,7 @@
             }).join('');
 
             document.getElementById('userTable').innerHTML = users.length ? `
-                <div class="admin-row header vip-table-header">
+                <div class="admin-row header vip-table-header vip-user-header">
                     <div>#</div>
                     <div>Họ tên</div>
                     <div>Email</div>
@@ -645,7 +645,7 @@
             }).join('');
 
             document.getElementById('pendingOrders').innerHTML = orders.length ? `
-                <div class="admin-row header vip-table-header">
+                <div class="admin-row header vip-table-header vip-order-header">
                     <div>#</div>
                     <div>ID</div>
                     <div>Ngày</div>
@@ -693,7 +693,7 @@
             }).join('');
 
             document.getElementById('orderTable').innerHTML = orders.length ? `
-                <div class="admin-row header vip-table-header">
+                <div class="admin-row header vip-table-header vip-order-header">
                     <div>#</div>
                     <div>ID</div>
                     <div>Ngày</div>
@@ -829,7 +829,7 @@ async function changeOrderStatus(orderId, newStatus) {
                 `;
             }).join('');
             document.getElementById('transactionTable').innerHTML = orders.length ? `
-                <div class="admin-row header vip-table-header">
+                <div class="admin-row header vip-table-header vip-transaction-header">
                     <div>#</div>
                     <div>ID</div>
                     <div>Ngày</div>
