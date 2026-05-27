@@ -2929,3 +2929,231 @@ body {
   align-items: center !important;
   justify-content: center !important;
 }
+
+
+/* ===== Responsive Email Popup ===== */
+.email-popup-overlay,
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 18, 45, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 9999;
+}
+
+.email-popup,
+.newsletter-popup,
+.popup-content {
+  width: min(92vw, 920px);
+  max-height: 90vh;
+  display: grid;
+  grid-template-columns: 46% 54%;
+  background: #fff8fc;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(45, 18, 55, 0.35);
+  position: relative;
+}
+
+.email-popup-image,
+.popup-image {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.email-popup-image img,
+.popup-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.email-popup-content,
+.popup-text,
+.popup-body {
+  padding: clamp(28px, 4vw, 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.email-popup-content h2,
+.popup-text h2,
+.popup-body h2 {
+  font-size: clamp(24px, 3.2vw, 40px);
+  line-height: 1.12;
+  margin: 10px 0 24px;
+  color: #35163f;
+}
+
+.email-popup-content p,
+.popup-text p,
+.popup-body p {
+  font-size: clamp(13px, 1.4vw, 16px);
+  line-height: 1.6;
+  color: #6d5375;
+}
+
+.email-popup-form,
+.popup-form {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 8px 0 28px;
+}
+
+.email-popup-form input,
+.popup-form input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 20px;
+  border: 1px solid #f4a8cf;
+  border-radius: 999px;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
+}
+
+.email-popup-form button,
+.popup-form button {
+  height: 48px;
+  padding: 0 30px;
+  border: none;
+  border-radius: 999px;
+  background: #ff1493;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.email-popup-close,
+.popup-close,
+.close-popup {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #c02676;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(70, 25, 70, 0.15);
+}
+
+/* Laptop nhỏ / iPad ngang */
+@media (max-width: 1024px) {
+  .email-popup,
+  .newsletter-popup,
+  .popup-content {
+    width: min(94vw, 820px);
+    grid-template-columns: 44% 56%;
+  }
+
+  .email-popup-image,
+  .popup-image {
+    min-height: 380px;
+  }
+}
+
+/* iPad dọc / tablet */
+@media (max-width: 768px) {
+  .email-popup-overlay,
+  .popup-overlay {
+    padding: 18px;
+    align-items: center;
+  }
+
+  .email-popup,
+  .newsletter-popup,
+  .popup-content {
+    width: 94vw;
+    max-height: 88vh;
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    border-radius: 24px;
+  }
+
+  .email-popup-image,
+  .popup-image {
+    height: 260px;
+    min-height: 260px;
+  }
+
+  .email-popup-content,
+  .popup-text,
+  .popup-body {
+    padding: 28px;
+  }
+
+  .email-popup-form,
+  .popup-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .email-popup-form input,
+  .popup-form input,
+  .email-popup-form button,
+  .popup-form button {
+    width: 100%;
+  }
+}
+
+/* Điện thoại */
+@media (max-width: 480px) {
+  .email-popup-overlay,
+  .popup-overlay {
+    padding: 12px;
+    align-items: flex-start;
+    padding-top: 28px;
+  }
+
+  .email-popup,
+  .newsletter-popup,
+  .popup-content {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 20px;
+  }
+
+  .email-popup-image,
+  .popup-image {
+    height: 200px;
+    min-height: 200px;
+  }
+
+  .email-popup-content,
+  .popup-text,
+  .popup-body {
+    padding: 24px 20px;
+  }
+
+  .email-popup-content h2,
+  .popup-text h2,
+  .popup-body h2 {
+    font-size: 24px;
+  }
+
+  .email-popup-close,
+  .popup-close,
+  .close-popup {
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
+}
