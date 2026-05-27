@@ -1904,9 +1904,5 @@ function initializeDemoData() {
 }
 
 // Initialize demo data on first load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeDemoData);
-} else {
-    initializeDemoData();
-}
+initializeDemoData();
 
