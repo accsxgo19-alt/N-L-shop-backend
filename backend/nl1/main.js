@@ -1393,6 +1393,8 @@ function clearBuyNowItem() {
 }
 
 function setBuyNow(productId, quantity = 1) {
+    if (!requireLoginBeforeAction()) return;
+    
     saveBuyNowItem({ productId, quantity });
     window.location.href = 'checkout.html';
 }
@@ -1584,6 +1586,17 @@ function updateDetailQuantity(change) {
     quantityInput.value = next;
 }
 
+// ==================== LOGIN REQUIREMENT HELPER ====================
+function requireLoginBeforeAction() {
+    if (!isLoggedIn()) {
+        sessionStorage.setItem('redirectAfterLogin', window.location.href);
+        alert('Vui lòng đăng nhập để tiếp tục mua hàng.');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
 // khởi tạo dữ liệu cục bộ và cố gắng đồng bộ với backend nếu có
 initializeProductData();
 syncProductsFromServer();
@@ -1592,6 +1605,8 @@ initSocket();
 fetchAndStoreUserOrders().catch(() => { });
 
 async function addProductDetailToCart() {
+    if (!requireLoginBeforeAction()) return;
+    
     const productId = getQueryParam('id');
     const quantity = Number(document.getElementById('detailQuantity')?.value) || 1;
     if (!productId) return;
@@ -1814,6 +1829,8 @@ function viewProduct(productId) {
 }
 
 async function quickAdd(productId) {
+    if (!requireLoginBeforeAction()) return;
+    
     const product = getProductById(productId);
     if (!product) return;
     await addToCart(productId);

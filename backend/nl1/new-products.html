@@ -11,7 +11,9 @@
     <nav class="navbar">
         <div class="container">
                 <div class="navbar-brand">
-                <h1>👗 N&L Shop</h1>
+                <a href="index.html" class="brand-link" aria-label="Về trang chủ">
+                    <h1>👗 N&L Shop</h1>
+                </a>
             </div>
             <ul class="navbar-menu">
                 <li><a href="index.html">Trang chủ</a></li>
@@ -34,18 +36,23 @@
         </div>
     </nav>
 
-    <div class="container">
-        <div class="page-header">
-            <div class="page-label">Ưu tiên hàng đầu</div>
-            <h2>Sản phẩm mới nhất & bán chạy</h2>
-            <p>Khám phá những item đang dẫn đầu xu hướng hiện nay và những mặt hàng hot được khách hàng săn đón nhiều nhất.</p>
-        </div>
+    <section class="new-products-hero">
+        <div class="container">
+            <div class="section-heading center-heading">
+                <span class="section-eyebrow">Ưu tiên hàng đầu</span>
+                <h1>Sản phẩm mới nhất & bán chạy</h1>
+                <p>Khám phá những item đang dẫn đầu xu hướng hiện nay và những mặt hàng hot được khách hàng săn đón nhiều nhất.</p>
+            </div>
 
-        <section class="section-block">
-            <div class="section-head">
-                <h3>Sản phẩm mới nhất</h3>
+            <div class="section-heading center-heading compact-heading">
+                <h2>Sản phẩm mới nhất</h2>
                 <p>Những mẫu mới vừa được cập nhật vào bộ sưu tập N&L Shop.</p>
             </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <section class="section-block">
             <div class="products-grid" id="newestProductsContainer"></div>
         </section>
 

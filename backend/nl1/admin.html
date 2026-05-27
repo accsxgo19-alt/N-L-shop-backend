@@ -10,7 +10,9 @@
     <nav class="navbar">
         <div class="container">
                 <div class="navbar-brand">
-                <h1>👗 N&L Shop</h1>
+                <a href="index.html" class="brand-link" aria-label="Về trang chủ">
+                    <h1>👗 N&L Shop</h1>
+                </a>
             </div>
             <ul class="navbar-menu">
                 <li><a href="index.html">Trang chủ</a></li>
@@ -33,15 +35,16 @@
         </div>
     </nav>
 
-    <div class="container">
-        <div class="admin-dashboard-panel">
-            <div class="page-header">
+        <main class="admin-shell">
+            <div class="container">
+                <section class="admin-dashboard-panel">
+                        <div class="page-header admin-hero">
                 <div class="page-label">Khu vực quản lý</div>
                 <h2>Dashboard quản lý Admin</h2>
                 <p>Quản lý sản phẩm, đơn hàng, tài khoản, doanh số và tương tác khách hàng.</p>
             </div>
 
-            <div class="dashboard-grid">
+            <div class="dashboard-grid admin-kpi-grid">
             <div class="dashboard-card">
                 <h3>Doanh số hôm nay</h3>
                 <p id="salesToday">0đ</p>
@@ -102,7 +105,7 @@
             </div>
         </div>
 
-        <div class="dashboard-section admin-flex">
+        <div class="dashboard-section admin-two-col">
             <div class="admin-card admin-wide">
                 <h3>Quản lý sản phẩm</h3>
                 <div class="product-management-grid">
@@ -187,11 +190,13 @@
                     </div>
                 </div>
                 <div id="productMessage" class="success-message"></div>
-                <div id="productTable" class="admin-table"></div>
+                <div class="admin-table-scroll">
+                    <div id="productTable" class="admin-table"></div>
+                </div>
             </div>
         </div>
 
-        <div class="dashboard-section admin-flex">
+        <div class="dashboard-section admin-two-col">
             <div class="admin-card admin-medium">
                 <h3>Thời gian sử dụng trang</h3>
                 <div id="activitySummary" class="stats-list"></div>
@@ -199,25 +204,41 @@
             </div>
             <div class="admin-card admin-medium">
                 <h3>Đơn chờ duyệt</h3>
-                <div id="pendingOrders" class="admin-table"></div>
+                <div class="admin-table-scroll">
+                    <div id="pendingOrders" class="admin-table"></div>
+                </div>
             </div>
         </div>
 
-        <div class="dashboard-section admin-flex">
-            <div class="admin-card admin-medium">
-                <h3>Quản lý đơn hàng</h3>
-                <div id="orderTable" class="admin-table"></div>
-            </div>
+        <div class="dashboard-section admin-two-col">
+            <section class="admin-section admin-orders-section admin-medium">
+                <div class="admin-section-header">
+                    <div>
+                        <span class="section-eyebrow">Orders</span>
+                        <h2>Quản lý đơn hàng</h2>
+                        <p>Theo dõi, duyệt và cập nhật trạng thái đơn hàng của khách.</p>
+                    </div>
+                </div>
+                <div class="admin-table-wrapper">
+                    <div class="admin-table-scroll">
+                        <div id="orderTable" class="admin-table"></div>
+                    </div>
+                </div>
+            </section>
             <div class="admin-card admin-medium">
                 <h3>Quản lý tài khoản</h3>
-                <div id="userTable" class="admin-table"></div>
+                <div class="admin-table-scroll">
+                    <div id="userTable" class="admin-table"></div>
+                </div>
             </div>
         </div>
 
-        <div class="dashboard-section admin-flex">
+        <div class="dashboard-section admin-two-col">
             <div class="admin-card admin-medium">
                 <h3>Lịch sử giao dịch</h3>
-                <div id="transactionTable" class="admin-table"></div>
+                <div class="admin-table-scroll">
+                    <div id="transactionTable" class="admin-table"></div>
+                </div>
             </div>
             <div class="admin-card admin-medium admin-chat">
                 <h3>Chatbox Admin</h3>
@@ -228,13 +249,14 @@
                 </div>
             </div>
         </div>
-        </div>
-    </div>
+        </section>
+      </div>
+    </main>
 
     <footer class="footer">
         <div class="container">
             <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
-            <p>Li�n h?: nlshop213@gmail.com | �i?n tho?i: 0793244405</p>
+            <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
         </div>
     </footer>
 
@@ -611,7 +633,7 @@
             const orders = getAllOrders().filter(order => order.status === 'pending');
             const rows = orders.map((order, index) => {
                 return `
-                    <div class="admin-row vip-table-row vip-order-row">
+                    <div class="admin-row vip-table-row vip-order-row pending-order-row">
                         <div class="row-id">${index + 1}</div>
                         <div>${order.id}</div>
                         <div>${new Date(order.date).toLocaleDateString('vi-VN')}</div>

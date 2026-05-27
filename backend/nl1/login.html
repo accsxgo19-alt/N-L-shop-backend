@@ -264,7 +264,9 @@
             setLoginError('');
             try {
                 await googleLogin();
-                window.location.href = 'index.html';
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirectUrl;
             } catch (error) {
                 setLoginError(error.message || 'Đăng nhập Google không thành công.');
             }
@@ -274,7 +276,9 @@
             setLoginError('');
             try {
                 await facebookLogin();
-                window.location.href = 'index.html';
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirectUrl;
             } catch (error) {
                 setLoginError(error.message || 'Đăng nhập Facebook không thành công.');
             }
@@ -304,7 +308,9 @@
             }
             const success = await login(identifier, password);
             if (success) {
-                window.location.href = 'index.html';
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirectUrl;
             } else {
                 if (errorMessage) errorMessage.textContent = 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
             }

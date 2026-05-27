@@ -13,7 +13,9 @@
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
-                <h1>👗 N&L Shop</h1>
+                <a href="index.html" class="brand-link" aria-label="Về trang chủ">
+                    <h1>👗 N&L Shop</h1>
+                </a>
             </div>
             <ul class="navbar-menu">
                 <li><a href="index.html">Trang chủ</a></li>
@@ -277,6 +279,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Yêu cầu đăng nhập trước khi thanh toán
+            if (!isLoggedIn()) {
+                sessionStorage.setItem('redirectAfterLogin', window.location.href);
+                alert('Vui lòng đăng nhập để thanh toán.');
+                window.location.href = 'login.html';
+                return;
+            }
             const buyNowItem = getBuyNowItem();
             const cart = getCart();
             currentCheckoutItems = buyNowItem ? [buyNowItem] : cart;

@@ -6,12 +6,14 @@
     <title>Tài khoản của tôi - N&L Shop</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="account-page">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
-                <h1>👗 N&L Shop</h1>
+                <a href="index.html" class="brand-link" aria-label="Về trang chủ">
+                    <h1>👗 N&L Shop</h1>
+                </a>
             </div>
             <ul class="navbar-menu">
                 <li><a href="index.html">Trang chủ</a></li>
@@ -35,7 +37,7 @@
     </nav>
 
     <!-- Account Content -->
-    <div class="container">
+    <div class="container account-container">
         <div class="account-container">
             <h2>Thông Tin Tài Khoản</h2>
             
@@ -71,7 +73,9 @@
                     <input type="password" id="confirmPassword" name="confirmPassword">
                 </div>
 
-                <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                </div>
                 <div id="errorMessage" class="error-message"></div>
                 <div id="successMessage" class="success-message"></div>
             </form>

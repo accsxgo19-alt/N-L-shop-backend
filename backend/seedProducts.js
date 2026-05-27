@@ -30,7 +30,7 @@ const products = [
     name: 'Áo Sơ Mi Nam',
     category: 'Áo',
     price: 280000,
-    image: '👔',
+    image: 'img/aosomi1.ppg',
     rating: 4.8,
     sold: 210,
     stock: 45,

@@ -13,7 +13,9 @@
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
-                <h1>🛍️ N&L Shop</h1>
+                <a href="index.html" class="brand-link" aria-label="Về trang chủ">
+                    <h1>🛍️ N&L Shop</h1>
+                </a>
             </div>
             <ul class="navbar-menu">
                 <li><a href="index.html">Trang chủ</a></li>
@@ -270,30 +272,13 @@
     };
 
     document.addEventListener('DOMContentLoaded', async function () {
-        // Reset filters and search inputs
+        initializePage();
+
         const searchInput = document.getElementById('searchInput');
         const categoryFilter = document.getElementById('categoryFilter');
 
-        if (searchInput) {
-            searchInput.value = '';
-        }
-
-        if (categoryFilter) {
-            categoryFilter.value = '';
-        }
-
-        // Initialize page and load products
-        if (typeof initializePage === 'function') {
-            initializePage();
-        }
-
-        if (typeof syncProductsFromServer === 'function') {
-            try {
-                await syncProductsFromServer();
-            } catch (err) {
-                console.warn('syncProductsFromServer error:', err);
-            }
-        }
+        if (searchInput) searchInput.value = '';
+        if (categoryFilter) categoryFilter.value = '';
 
         if (typeof loadProducts === 'function') {
             loadProducts('', '');
@@ -303,11 +288,15 @@
             setupSearchAndFilter();
         }
 
-        // Show email popup
+        if (typeof syncProductsFromServer === 'function') {
+            await syncProductsFromServer().catch(() => {});
+            if (typeof loadProducts === 'function') {
+                loadProducts('', '');
+            }
+        }
+
         if (typeof showEmailPopupSafely === 'function') {
-            setTimeout(function () {
-                showEmailPopupSafely();
-            }, 300);
+            showEmailPopupSafely();
         }
     });
 
