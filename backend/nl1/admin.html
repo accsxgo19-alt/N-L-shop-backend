@@ -682,33 +682,115 @@
                 ${rows}
             ` : '<div class="empty-message">Chưa có đơn hàng.</div>';
         }
+async function updateOrderStatusOnServer(orderId, newStatus) {
+    const headers = Object.assign(
+        { 'Content-Type': 'application/json' },
+        getAuthHeaders()
+    );
 
-        function approveOrder(orderId) {
-            const orders = getAllOrders();
-            const order = orders.find(item => item.id === orderId);
-            if (!order) return;
-            order.status = 'processing';
-            saveAllOrders(orders);
-            renderPendingOrders();
-            renderOrderTable();
-            renderTransactionTable();
-            loadAdminDashboard();
+    const possibleUrls = [
+        `${API_BASE}/api/admin/orders/${encodeURIComponent(orderId)}/status`,
+        `${API_BASE}/api/orders/${encodeURIComponent(orderId)}/status`,
+        `${API_BASE}/api/admin/orders/${encodeURIComponent(orderId)}`,
+        `${API_BASE}/api/orders/${encodeURIComponent(orderId)}`
+    ];
+
+    let lastError = null;
+
+    for (const url of possibleUrls) {
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (response.ok) {
+                const data = await response.json().catch(() => ({}));
+                return {
+                    success: true,
+                    order: data.order || data.data || data
+                };
+            }
+
+            lastError = await response.json().catch(() => ({
+                message: `HTTP ${response.status}`
+            }));
+        } catch (error) {
+            lastError = error;
         }
+    }
 
-        function changeOrderStatus(orderId, newStatus) {
-            const orders = getAllOrders();
-            const order = orders.find(item => item.id === orderId);
-            if (!order) return;
-            const normalizedStatus = ORDER_STATUS_KEYS[newStatus] || newStatus;
-            if (!ORDER_STATUS_LABELS[normalizedStatus]) return;
-            order.status = normalizedStatus;
-            saveAllOrders(orders);
-            renderOrderTable();
-            renderPendingOrders();
-            renderTransactionTable();
-            loadAdminDashboard();
-        }
+    return {
+        success: false,
+        message: lastError?.message || 'Không thể cập nhật trạng thái đơn hàng lên server.'
+    };
+}
 
+function updateOrderStatusInLocal(orderId, newStatus, serverOrder = null) {
+    const orders = getAllOrders();
+    const index = orders.findIndex(item =>
+        String(item.id || item._id) === String(orderId)
+    );
+
+    if (index === -1) return false;
+
+    orders[index] = {
+        ...orders[index],
+        ...(serverOrder || {}),
+        id: String(serverOrder?._id || serverOrder?.id || orders[index].id || orderId),
+        status: newStatus,
+        date: orders[index].date || serverOrder?.date || serverOrder?.createdAt || new Date().toISOString(),
+        userEmail: orders[index].userEmail || serverOrder?.customerEmail || serverOrder?.email || '',
+        total: orders[index].total || serverOrder?.totalAmount || serverOrder?.total || 0,
+    };
+
+    saveAllOrders(orders);
+    return true;
+}
+
+function refreshAdminOrderUI() {
+    renderPendingOrders();
+    renderOrderTable();
+    renderTransactionTable();
+    loadAdminDashboard();
+}
+
+async function approveOrder(orderId) {
+    await changeOrderStatus(orderId, 'processing');
+}
+
+async function changeOrderStatus(orderId, newStatus) {
+    const normalizedStatus = ORDER_STATUS_KEYS[newStatus] || newStatus;
+
+    if (!ORDER_STATUS_LABELS[normalizedStatus]) {
+        alert('Trạng thái đơn hàng không hợp lệ.');
+        return;
+    }
+
+    const localUpdated = updateOrderStatusInLocal(orderId, normalizedStatus);
+    refreshAdminOrderUI();
+
+    if (!localUpdated) {
+        alert('Không tìm thấy đơn hàng trong dữ liệu hiện tại.');
+        return;
+    }
+
+    if (!isAdmin() || !getCurrentUserToken()) {
+        alert('Đã cập nhật tạm thời trên trình duyệt. Bạn cần đăng nhập admin để lưu lên server.');
+        return;
+    }
+
+    const result = await updateOrderStatusOnServer(orderId, normalizedStatus);
+
+    if (result.success) {
+        updateOrderStatusInLocal(orderId, normalizedStatus, result.order);
+        refreshAdminOrderUI();
+        alert('Cập nhật trạng thái đơn hàng thành công.');
+    } else {
+        alert('Đã cập nhật tạm thời, nhưng chưa lưu được lên server: ' + result.message);
+    }
+}
         function renderTransactionTable() {
             const orders = getAllOrders();
             const rows = orders.map((order, index) => {

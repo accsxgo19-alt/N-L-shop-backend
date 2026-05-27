@@ -687,22 +687,39 @@ function getUserOrders() {
 }
 
 function fetchAndStoreUserOrders() {
-    if (!isLoggedIn()) return Promise.resolve();
+    if (!isLoggedIn()) return Promise.resolve([]);
+
     return fetch(`${API_BASE}/api/orders/my`, { headers: getAuthHeaders() })
         .then(r => r.ok ? r.json() : [])
         .then(orders => {
-            // normalize orders and save to local storage as fallback cache
             const mapped = (orders || []).map(o => ({
-                id: o._id || o.id,
-                userEmail: o.customerEmail || (o.user && o.user.email) || getCurrentUser()?.email,
-                items: (o.items || []).map(i => ({ productId: String(i.product || i.id || i._id), quantity: i.quantity, name: i.name, price: i.price })),
-                total: o.totalAmount || o.total || 0,
-                createdAt: o.createdAt,
-                status: o.status,
+                id: String(o._id || o.id || o.orderId || ''),
+                userEmail: o.customerEmail || o.email || (o.user && o.user.email) || getCurrentUser()?.email || '',
+                fullname: o.fullname || o.customerName || o.name || '',
+                phone: o.phone || '',
+                shippingAddress: o.shippingAddress || o.address || '',
+                email: o.email || o.customerEmail || getCurrentUser()?.email || '',
+                paymentMethod: o.paymentMethod || 'cash',
+                items: (o.items || []).map(i => ({
+                    productId: String(i.product || i.productId || i.id || i._id || ''),
+                    quantity: Number(i.quantity) || 1,
+                    name: i.name || (i.product && i.product.name) || '',
+                    price: Number(i.price || (i.product && i.product.price)) || 0,
+                    image: i.image || (i.product && i.product.image) || ''
+                })),
+                total: Number(o.totalAmount || o.total) || 0,
+                date: o.date || o.createdAt || new Date().toISOString(),
+                createdAt: o.createdAt || o.date || new Date().toISOString(),
+                status: o.status || 'pending',
+                estimatedDeliveryDate: o.estimatedDeliveryDate || '',
+                discountCode: o.discountCode || '',
+                discountAmount: Number(o.discountAmount) || 0,
             }));
+
             saveAllOrders(mapped);
             return mapped;
-        }).catch(() => Promise.resolve([]));
+        })
+        .catch(() => Promise.resolve([]));
 }
 
 function createOrder(fullname, phone, address, email, paymentMethod, cartItems, discountCode = '', discountAmount = 0) {
