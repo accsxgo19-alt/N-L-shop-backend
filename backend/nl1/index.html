@@ -103,43 +103,124 @@
 
     <script src="main.js"></script>
     <script>
-        // Initialize the page
+        let emailPopupTimer = null;
+        let emailPopupInteracted = false;
+        const EMAIL_POPUP_CLOSED_KEY = 'emailPopupClosed';
+        const EMAIL_POPUP_SUBMITTED_KEY = 'emailPopupSubmitted';
+
         document.addEventListener('DOMContentLoaded', function () {
             initializePage();
             loadProducts();
             setupSearchAndFilter();
-            setTimeout(showEmailModal, 5000);
-            document.getElementById('emailModalForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                const emailInput = document.getElementById('modalEmailInput');
-                const messageElement = document.getElementById('modalMessage');
-                const email = emailInput.value.trim();
-                if (!email) {
-                    emailInput.focus();
-                    return;
-                }
-
-                const normalizedEmail = saveEmailSubscriber(email);
-                const discountCode = getRecommendedCustomerDiscountCode(normalizedEmail);
-                sessionStorage.setItem('popupDiscountCode', discountCode);
-
-                if (discountCode === 'LOYAL10') {
-                    messageElement.textContent = `Chào mừng trở lại! Bạn nhận được mã ${discountCode} - Giảm 10% cho mỗi sản phẩm khi mua 5 món trở lên.`;
-                } else {
-                    messageElement.textContent = `Cảm ơn bạn! Mã giảm giá của bạn là ${discountCode}. Nhập mã này khi thanh toán để được ưu đãi.`;
-                }
-                messageElement.style.color = '#7a1f7a';
-                messageElement.style.fontWeight = '700';
-                emailInput.value = '';
-            });
+            scheduleEmailModal();
+            bindEmailModalEvents();
         });
 
+        function scheduleEmailModal() {
+            setTimeout(showEmailModal, 5000);
+        }
+
         function showEmailModal() {
-            document.getElementById('emailModalOverlay').classList.remove('hidden');
+            const overlay = document.getElementById('emailModalOverlay');
+            const form = document.getElementById('emailModalForm');
+            const emailInput = document.getElementById('modalEmailInput');
+
+            if (!overlay || overlay.classList.contains('hidden') === false) {
+                return;
+            }
+
+            if (sessionStorage.getItem(EMAIL_POPUP_CLOSED_KEY) === '1' || localStorage.getItem(EMAIL_POPUP_SUBMITTED_KEY) === '1') {
+                return;
+            }
+
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+            emailPopupInteracted = false;
+            clearTimeout(emailPopupTimer);
+
+            emailPopupTimer = setTimeout(() => {
+                if (!emailPopupInteracted) {
+                    hideEmailModal();
+                    sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
+                }
+            }, 10000);
+
+            if (emailInput) {
+                emailInput.addEventListener('focus', markEmailPopupInteracted, { once: true });
+                emailInput.addEventListener('input', markEmailPopupInteracted, { once: true });
+            }
+
+            if (form) {
+                form.addEventListener('click', markEmailPopupInteracted, { once: true });
+            }
+        }
+
+        function bindEmailModalEvents() {
+            const overlay = document.getElementById('emailModalOverlay');
+            const closeBtn = document.querySelector('.modal-close');
+            const form = document.getElementById('emailModalForm');
+            const emailInput = document.getElementById('modalEmailInput');
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function () {
+                    clearTimeout(emailPopupTimer);
+                    hideEmailModal();
+                    sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
+                });
+            }
+
+            if (emailInput) {
+                emailInput.addEventListener('focus', markEmailPopupInteracted);
+                emailInput.addEventListener('input', markEmailPopupInteracted);
+            }
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    markEmailPopupInteracted();
+
+                    const emailInput = document.getElementById('modalEmailInput');
+                    const messageElement = document.getElementById('modalMessage');
+                    const email = emailInput.value.trim();
+                    if (!email) {
+                        emailInput.focus();
+                        return;
+                    }
+
+                    const normalizedEmail = saveEmailSubscriber(email);
+                    const discountCode = getRecommendedCustomerDiscountCode(normalizedEmail);
+                    sessionStorage.setItem('popupDiscountCode', discountCode);
+                    localStorage.setItem(EMAIL_POPUP_SUBMITTED_KEY, '1');
+
+                    if (discountCode === 'LOYAL10') {
+                        messageElement.textContent = `Chào mừng trở lại! Bạn nhận được mã ${discountCode} - Giảm 10% cho mỗi sản phẩm khi mua 5 món trở lên.`;
+                    } else {
+                        messageElement.textContent = `Cảm ơn bạn! Mã giảm giá của bạn là ${discountCode}. Nhập mã này khi thanh toán để được ưu đãi.`;
+                    }
+                    messageElement.style.color = '#7a1f7a';
+                    messageElement.style.fontWeight = '700';
+                    emailInput.value = '';
+                });
+            }
+        }
+
+        function markEmailPopupInteracted() {
+            emailPopupInteracted = true;
+            clearTimeout(emailPopupTimer);
+        }
+
+        function hideEmailModal() {
+            const overlay = document.getElementById('emailModalOverlay');
+            if (!overlay) return;
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
+            clearTimeout(emailPopupTimer);
         }
 
         function closeEmailModal() {
-            document.getElementById('emailModalOverlay').classList.add('hidden');
+            clearTimeout(emailPopupTimer);
+            hideEmailModal();
+            sessionStorage.setItem(EMAIL_POPUP_CLOSED_KEY, '1');
         }
     </script>
 </body>
