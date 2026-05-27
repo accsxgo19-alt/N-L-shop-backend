@@ -80,259 +80,208 @@
         </div>
     </footer>
 
-    <div id="emailModalOverlay" class="modal-overlay hidden">
-        <div class="email-modal">
-            <button class="modal-close" onclick="closeEmailModal()">×</button>
-            <div class="modal-body">
-                <div class="modal-visual">
-                    <img src="img/anhpopup.png" alt="Ưu đãi thời trang" />
+        <div id="emailModalOverlay" class="modal-overlay hidden">
+                <div class="email-modal">
+                        <button type="button" class="modal-close" aria-label="Đóng popup">×</button>
+                        <div class="modal-body">
+                                <div class="modal-visual">
+                                        <img src="img/anhpopup.png" alt="Ưu đãi thời trang" />
+                                </div>
+                                <div class="modal-copy">
+                                        <p class="modal-subtitle">✨ Xin chào quý khách hàng</p>
+                                        <h3>Để lại email của bạn để nhận thông tin khuyến mãi mới nhất nhé</h3>
+                                        <form id="emailModalForm" class="email-modal-form">
+                                                <input type="email" id="modalEmailInput" placeholder="Nhập email tại đây" required>
+                                                <button type="submit" class="btn btn-primary">Gửi ngay</button>
+                                        </form>
+                                        <div id="modalMessage" class="modal-message"></div>
+                                        <p class="modal-note">Chúng tôi cam kết chỉ gửi ưu đãi giá trị, không spam.</p>
+                                </div>
+                        </div>
                 </div>
-                <div class="modal-copy">
-                    <p class="modal-subtitle">✨ Xin chào quý khách hàng</p>
-                    <h3>Để lại email của bạn để nhận thông tin khuyến mãi mới nhất nhé</h3>
-                    <form id="emailModalForm" class="email-modal-form">
-                        <input type="email" id="modalEmailInput" placeholder="Nhập email tại đây" required>
-                        <button type="submit" class="btn btn-primary">Gửi ngay</button>
-                    </form>
-                    <div id="modalMessage" class="modal-message"></div>
-                    <p class="modal-note">Chúng tôi cam kết chỉ gửi ưu đãi giá trị, không spam.</p>
-                </div>
-            </div>
         </div>
-    </div>
 
-    <script src="main.js"></script>
-    <script>
-        /* Email popup robustness and mobile fixes */
-        let emailPopupAutoTimer = null;
-        let emailPopupInteracted = false;
+        <script src="main.js"></script>
+        <script>
+(function () {
+    const POPUP_CLOSED_KEY = 'emailPopupClosed';
+    const POPUP_SUBMITTED_KEY = 'emailPopupSubmitted';
+    let popupTimer = null;
+    let popupInteracted = false;
 
-        function getEmailPopupElements() {
-            const overlay = document.getElementById('emailModalOverlay');
-            const modal = document.querySelector('.email-modal');
-            const closeBtn = document.querySelector('.modal-close');
-            const form = document.getElementById('emailModalForm');
-            const input = form ? form.querySelector('input[type="email"], input') : null;
-            const message = document.getElementById('modalMessage');
+    function getPopupEls() {
+        const overlay = document.querySelector('.modal-overlay');
+        const modal = document.querySelector('.email-modal');
+        const closeBtn = document.querySelector('.modal-close');
+        const form = document.querySelector('.email-modal-form');
+        const input = form ? form.querySelector('input[type="email"], input') : null;
+        const message = document.querySelector('.modal-message');
 
-            return { overlay, modal, closeBtn, form, input, message };
+        return { overlay, modal, closeBtn, form, input, message };
+    }
+
+    function forceHidePopup(saveSessionClosed = true) {
+        const { overlay } = getPopupEls();
+
+        clearTimeout(popupTimer);
+
+        if (!overlay) return;
+
+        overlay.classList.add('hidden');
+        overlay.classList.remove('show');
+        overlay.style.setProperty('display', 'none', 'important');
+        overlay.style.setProperty('visibility', 'hidden', 'important');
+        overlay.style.setProperty('opacity', '0', 'important');
+        overlay.setAttribute('aria-hidden', 'true');
+
+        if (saveSessionClosed) {
+            sessionStorage.setItem(POPUP_CLOSED_KEY, '1');
+        }
+    }
+
+    function forceShowPopup() {
+        const { overlay } = getPopupEls();
+
+        if (!overlay) return;
+
+        if (
+            sessionStorage.getItem(POPUP_CLOSED_KEY) === '1' ||
+            localStorage.getItem(POPUP_SUBMITTED_KEY) === '1'
+        ) {
+            forceHidePopup(false);
+            return;
         }
 
-        function hideEmailPopup(saveClosed = true) {
-            const { overlay } = getEmailPopupElements();
-            if (!overlay) return;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('show');
+        overlay.style.setProperty('display', 'flex', 'important');
+        overlay.style.setProperty('visibility', 'visible', 'important');
+        overlay.style.setProperty('opacity', '1', 'important');
+        overlay.setAttribute('aria-hidden', 'false');
 
-            clearTimeout(emailPopupAutoTimer);
+        startPopupTimer();
+    }
 
-            overlay.classList.add('hidden');
-            overlay.style.display = 'none';
+    function markInteracted() {
+        popupInteracted = true;
+        clearTimeout(popupTimer);
+    }
 
-            if (saveClosed) {
-                sessionStorage.setItem('emailPopupClosed', '1');
+    function startPopupTimer() {
+        clearTimeout(popupTimer);
+        popupInteracted = false;
+
+        popupTimer = setTimeout(function () {
+            if (!popupInteracted) {
+                forceHidePopup(true);
             }
+        }, 5000);
+    }
+
+    function savePopupEmail(email) {
+        const normalized = email.trim().toLowerCase();
+
+        if (typeof saveEmailSubscriber === 'function') {
+            saveEmailSubscriber(normalized);
+            return;
         }
 
-        function markEmailPopupInteracted() {
-            emailPopupInteracted = true;
-            clearTimeout(emailPopupAutoTimer);
+        const subscribers = JSON.parse(localStorage.getItem('emailSubscribers') || '[]');
+
+        if (!subscribers.includes(normalized)) {
+            subscribers.push(normalized);
+            localStorage.setItem('emailSubscribers', JSON.stringify(subscribers));
+        }
+    }
+
+    function bindPopupEvents() {
+        const { overlay, closeBtn, form, input, message } = getPopupEls();
+
+        if (!overlay) return;
+
+        if (overlay.dataset.finalPopupBound === '1') return;
+        overlay.dataset.finalPopupBound = '1';
+
+        if (closeBtn) {
+            const closeHandler = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                forceHidePopup(true);
+            };
+
+            closeBtn.addEventListener('click', closeHandler, true);
+            closeBtn.addEventListener('touchstart', closeHandler, { passive: false, capture: true });
+            closeBtn.addEventListener('pointerdown', closeHandler, true);
         }
 
-        function bindEmailPopupEvents() {
-            const { overlay, closeBtn, form, input, message } = getEmailPopupElements();
+        if (input) {
+            input.addEventListener('focus', markInteracted, true);
+            input.addEventListener('input', markInteracted, true);
+            input.addEventListener('touchstart', markInteracted, { passive: true, capture: true });
+        }
 
-            if (!overlay) return;
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
 
-            if (overlay.dataset.emailPopupBound === '1') return;
-            overlay.dataset.emailPopupBound = '1';
+                markInteracted();
 
-            if (closeBtn) {
-                const closeHandler = function(event) {
-                    if (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    hideEmailPopup(true);
-                };
+                const email = input ? input.value.trim() : '';
 
-                closeBtn.addEventListener('click', closeHandler);
-                closeBtn.addEventListener('touchstart', closeHandler, { passive: false });
-            }
-
-            if (input) {
-                input.addEventListener('focus', markEmailPopupInteracted);
-                input.addEventListener('input', markEmailPopupInteracted);
-                input.addEventListener('touchstart', markEmailPopupInteracted, { passive: true });
-            }
-
-            if (form) {
-                form.addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    markEmailPopupInteracted();
-
-                    const email = input ? input.value.trim() : '';
-
-                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        if (message) {
-                            message.textContent = 'Vui lòng nhập email hợp lệ.';
-                            message.style.color = '#d32f2f';
-                        }
-                        return;
-                    }
-
-                    if (typeof saveEmailSubscriber === 'function') {
-                        saveEmailSubscriber(email);
-                    } else {
-                        const subscribers = JSON.parse(localStorage.getItem('emailSubscribers') || '[]');
-                        const normalized = email.toLowerCase();
-                        if (!subscribers.includes(normalized)) {
-                            subscribers.push(normalized);
-                            localStorage.setItem('emailSubscribers', JSON.stringify(subscribers));
-                        }
-                    }
-
-                    localStorage.setItem('emailPopupSubmitted', '1');
-
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                     if (message) {
-                        message.textContent = 'Cảm ơn bạn! Mã giảm giá của bạn là EMAIL10. Nhập mã này khi thanh toán để được ưu đãi.';
-                        message.style.color = '#7a1f7a';
+                        message.textContent = 'Vui lòng nhập email hợp lệ.';
+                        message.style.color = '#d32f2f';
                     }
-
-                    setTimeout(function() {
-                        hideEmailPopup(true);
-                    }, 800);
-                });
-            }
-        }
-
-        function startEmailPopupAutoHideTimer() {
-            const { overlay } = getEmailPopupElements();
-            if (!overlay) return;
-
-            clearTimeout(emailPopupAutoTimer);
-            emailPopupInteracted = false;
-
-            emailPopupAutoTimer = setTimeout(function() {
-                if (!emailPopupInteracted) {
-                    hideEmailPopup(true);
+                    return false;
                 }
-            }, 10000);
+
+                savePopupEmail(email);
+                localStorage.setItem(POPUP_SUBMITTED_KEY, '1');
+
+                if (message) {
+                    message.textContent = 'Cảm ơn bạn! Mã giảm giá của bạn là EMAIL10. Nhập mã này khi thanh toán để được ưu đãi.';
+                    message.style.color = '#7a1f7a';
+                }
+
+                setTimeout(function () {
+                    forceHidePopup(true);
+                }, 800);
+
+                return false;
+            }, true);
         }
+    }
 
-        function showEmailPopupSafely() {
-            const { overlay } = getEmailPopupElements();
-            if (!overlay) return;
+    window.closeEmailModal = function () {
+        forceHidePopup(true);
+    };
 
-            if (
-                sessionStorage.getItem('emailPopupClosed') === '1' ||
-                localStorage.getItem('emailPopupSubmitted') === '1'
-            ) {
-                overlay.classList.add('hidden');
-                overlay.style.display = 'none';
-                return;
-            }
+    window.hideEmailPopup = function () {
+        forceHidePopup(true);
+    };
 
-            overlay.classList.remove('hidden');
-            overlay.style.display = 'flex';
+    window.showEmailPopupSafely = function () {
+        bindPopupEvents();
+        forceShowPopup();
+    };
 
-            bindEmailPopupEvents();
-            startEmailPopupAutoHideTimer();
-        }
+    document.addEventListener('DOMContentLoaded', function () {
+        bindPopupEvents();
 
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof initializePage === 'function') initializePage();
-            if (typeof loadProducts === 'function') loadProducts();
-            if (typeof setupSearchAndFilter === 'function') setupSearchAndFilter();
+        setTimeout(function () {
+            forceShowPopup();
+        }, 300);
+    });
 
-            bindEmailPopupEvents();
-
-            setTimeout(function() {
-                showEmailPopupSafely();
-            }, 300);
-        });
-
-        /* Ensure global closeEmailModal exists for inline onclick handlers */
-        function closeEmailModal() {
-            if (typeof hideEmailPopup === 'function') {
-                hideEmailPopup(true);
-            } else {
-                const overlay = document.querySelector('.modal-overlay');
-                if (!overlay) return;
-                overlay.classList.add('hidden');
-                overlay.style.display = 'none';
-                sessionStorage.setItem('emailPopupClosed', '1');
-            }
-        }
-
-        window.closeEmailModal = closeEmailModal;
-        if (typeof hideEmailPopup === 'function') window.hideEmailPopup = hideEmailPopup;
-
-        /* Extra safe binding: attach handlers if not already bound (prevents duplicate binds) */
-        document.addEventListener('DOMContentLoaded', function () {
-            const closeBtn = document.querySelector('.modal-close');
-
-            if (closeBtn && !closeBtn.dataset.closeBound) {
-                const handleClose = function (event) {
-                    if (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    closeEmailModal();
-                };
-
-                closeBtn.addEventListener('click', handleClose);
-                closeBtn.addEventListener('touchstart', handleClose, { passive: false });
-                closeBtn.dataset.closeBound = '1';
-            }
-
-            const form = document.querySelector('.email-modal-form');
-            const input = form ? form.querySelector('input[type="email"], input') : null;
-            const message = document.querySelector('.modal-message');
-
-            if (form && input && !form.dataset.submitBound) {
-                form.dataset.submitBound = '1';
-
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const email = input.value.trim();
-
-                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        if (message) {
-                            message.textContent = 'Vui lòng nhập email hợp lệ.';
-                            message.style.color = '#d32f2f';
-                        }
-                        return;
-                    }
-
-                    if (typeof saveEmailSubscriber === 'function') {
-                        saveEmailSubscriber(email);
-                    } else {
-                        const subscribers = JSON.parse(localStorage.getItem('emailSubscribers') || '[]');
-                        const normalized = email.toLowerCase();
-
-                        if (!subscribers.includes(normalized)) {
-                            subscribers.push(normalized);
-                            localStorage.setItem('emailSubscribers', JSON.stringify(subscribers));
-                        }
-                    }
-
-                    localStorage.setItem('emailPopupSubmitted', '1');
-
-                    if (message) {
-                        message.textContent = 'Cảm ơn bạn! Mã giảm giá của bạn là EMAIL10. Nhập mã này khi thanh toán để được ưu đãi.';
-                        message.style.color = '#7a1f7a';
-                    }
-
-                    setTimeout(function () {
-                        closeEmailModal();
-                    }, 800);
-                });
-            }
-        });
-    </script>
+    window.addEventListener('load', function () {
+        bindPopupEvents();
+    });
+})();
+</script>
 </body>
 
 </html>
