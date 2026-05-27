@@ -5,11 +5,11 @@ const Product = require('../models/Product');
 const createOrder = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
+
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
     }
 
-    // allow optional customer info in body (shipping/payment)
     const {
       fullname,
       phone,
@@ -26,18 +26,25 @@ const createOrder = async (req, res) => {
       quantity: item.quantity,
     }));
 
-    const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const totalAmount = orderItems.reduce((sum, item) => {
+      return sum + item.price * item.quantity;
+    }, 0);
 
     await Promise.all(
       cart.items.map(async (item) => {
         const product = await Product.findById(item.product._id);
+
         if (!product) {
           throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
         }
+
         if (product.stock < item.quantity) {
           throw new Error(`Sản phẩm ${product.name} không đủ số lượng trong kho.`);
         }
+
         product.stock -= item.quantity;
+        product.sold = (product.sold || 0) + item.quantity;
+
         await product.save();
       })
     );
@@ -59,7 +66,6 @@ const createOrder = async (req, res) => {
     cart.items = [];
     await cart.save();
 
-    // emit realtime order events
     try {
       const io = req.app.locals.io;
       if (io) {
@@ -70,10 +76,15 @@ const createOrder = async (req, res) => {
       console.error('Emit order events failed', e);
     }
 
-    res.status(201).json({ message: 'Tạo đơn hàng thành công.', order });
+    res.status(201).json({
+      message: 'Tạo đơn hàng thành công.',
+      order,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: error.message || 'Lỗi khi tạo đơn hàng.' });
+    res.status(500).json({
+      message: error.message || 'Lỗi khi tạo đơn hàng.',
+    });
   }
 };
 
@@ -83,26 +94,95 @@ const getMyOrders = async (req, res) => {
     res.json(orders);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi lấy lịch sử đơn hàng.' });
+    res.status(500).json({
+      message: 'Lỗi khi lấy lịch sử đơn hàng.',
+    });
   }
 };
 
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('user', 'name email');
+
     if (!order) {
-      return res.status(404).json({ message: 'Đơn hàng không tồn tại.' });
+      return res.status(404).json({
+        message: 'Đơn hàng không tồn tại.',
+      });
     }
 
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Bạn không có quyền xem đơn hàng này.' });
+    if (
+      order.user._id.toString() !== req.user._id.toString() &&
+      req.user.role !== 'admin'
+    ) {
+      return res.status(403).json({
+        message: 'Bạn không có quyền xem đơn hàng này.',
+      });
     }
 
     res.json(order);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi lấy chi tiết đơn hàng.' });
+    res.status(500).json({
+      message: 'Lỗi khi lấy chi tiết đơn hàng.',
+    });
   }
 };
 
-module.exports = { createOrder, getMyOrders, getOrderById };
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      'pending',
+      'processing',
+      'shipped',
+      'delivered',
+      'cancelled',
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Trạng thái đơn hàng không hợp lệ.',
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('user', 'name email');
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Không tìm thấy đơn hàng.',
+      });
+    }
+
+    try {
+      const io = req.app.locals.io;
+      if (io) {
+        io.to(String(order.user._id || order.user)).emit('orderUpdated', order);
+        io.to('admins').emit('orderUpdated', order);
+      }
+    } catch (e) {
+      console.error('Emit order updated failed', e);
+    }
+
+    res.json({
+      message: 'Cập nhật trạng thái đơn hàng thành công.',
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Lỗi khi cập nhật trạng thái đơn hàng.',
+    });
+  }
+};
+
+module.exports = {
+  createOrder,
+  getMyOrders,
+  getOrderById,
+  updateOrderStatus,
+};
