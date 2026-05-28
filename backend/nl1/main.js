@@ -45,7 +45,7 @@ const products = [
         name: 'Áo Thun Basic',
         category: 'Áo',
         price: 150000,
-        image: '👕',
+        image: 'img/aothun.jpg',
         rating: 4.5,
         sold: 320,
         createdAt: '2024-05-20',
@@ -56,7 +56,7 @@ const products = [
         name: 'Áo Sơ Mi Nam',
         category: 'Áo',
         price: 280000,
-        image: '👔',
+        image: 'img/aosomi1.jpg',
         rating: 4.8,
         sold: 210,
         createdAt: '2024-04-15',
@@ -67,7 +67,7 @@ const products = [
         name: 'Áo Len Nữ',
         category: 'Áo',
         price: 320000,
-        image: '🧥',
+        image: 'img/aolen1.jpg',
         rating: 4.6,
         sold: 410,
         createdAt: '2024-06-10',
@@ -434,8 +434,9 @@ function saveCart(cart) {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-function addToCart(productId, quantity = 1) {
+function addToCart(productId, quantity = 1, options = {}) {
     const normalizedProductId = String(productId);
+    options = options || {};
     if (isLoggedIn()) {
         // call backend
         return fetch(`${API_BASE}/api/cart`, {
@@ -458,7 +459,8 @@ function addToCart(productId, quantity = 1) {
                         quantity: i.quantity,
                         name: i.name || (i.product && i.product.name) || '',
                         price: i.price || (i.product && i.product.price) || 0,
-                        image: i.image || (i.product && i.product.image) || ''
+                        image: i.image || (i.product && i.product.image) || '',
+                        options: i.options || (i.product && i.product.options) || {}
                     }));
                     saveCart(serverCart);
                     document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: serverCart, total: data.totalAmount } }));
@@ -469,11 +471,11 @@ function addToCart(productId, quantity = 1) {
             .catch((e) => {
                 console.error('Backend cart add failed, fallback to local cart:', e);
                 const cart = getCart();
-                const existing = cart.find(item => String(item.productId) === normalizedProductId);
+                const existing = cart.find(item => String(item.productId) === normalizedProductId && JSON.stringify(item.options || {}) === JSON.stringify(options));
                 if (existing) {
                     existing.quantity += quantity;
                 } else {
-                    cart.push({ productId: normalizedProductId, quantity });
+                    cart.push({ productId: normalizedProductId, quantity, options });
                 }
                 saveCart(cart);
                 document.dispatchEvent(new CustomEvent('cart:updated', {
@@ -488,11 +490,11 @@ function addToCart(productId, quantity = 1) {
             });
     }
     const cart = getCart();
-    const existing = cart.find(item => String(item.productId) === normalizedProductId);
+    const existing = cart.find(item => String(item.productId) === normalizedProductId && JSON.stringify(item.options || {}) === JSON.stringify(options));
     if (existing) {
         existing.quantity += quantity;
     } else {
-        cart.push({ productId: normalizedProductId, quantity });
+        cart.push({ productId: normalizedProductId, quantity, options });
     }
     saveCart(cart);
     document.dispatchEvent(new CustomEvent('cart:updated', {
@@ -1394,13 +1396,13 @@ function clearBuyNowItem() {
 
 function setBuyNow(productId, quantity = 1) {
     if (!requireLoginBeforeAction()) return;
-    
-    saveBuyNowItem({ productId, quantity });
+    const { color, size } = getSelectedProductOptions();
+    saveBuyNowItem({ productId, quantity, color, size });
     window.location.href = 'checkout.html';
 }
 
 function loadProductDetail() {
-    const productId = getQueryParam('id');
+    const productId = getQueryParam('id')?.trim();
     const editMode = getQueryParam('edit') === '1';
     const container = document.getElementById('productDetailContainer');
     if (!container || !productId) {
@@ -1491,6 +1493,29 @@ function loadProductDetail() {
                 <div class="product-detail-category">${product.category}</div>
                 <h2>${product.name}</h2>
                 ${detailMeta}
+                <div class="product-detail-meta">
+                    <div class="product-config">
+                        <div class="product-option-group">
+                            <div class="option-label">Màu sắc</div>
+                            <div class="option-swatch-list">
+                                <button type="button" class="option-swatch option-swatch-dark product-option-button active" data-option="color" data-value="Đen" onclick="selectProductOption('color', 'Đen', this)" style="background:#111;"></button>
+                                <button type="button" class="option-swatch white-swatch product-option-button" data-option="color" data-value="Trắng" onclick="selectProductOption('color', 'Trắng', this)" style="background:#fff;"></button>
+                                <button type="button" class="option-swatch product-option-button" data-option="color" data-value="Hồng" onclick="selectProductOption('color', 'Hồng', this)" style="background:#ff6ec7;"></button>
+                                <button type="button" class="option-swatch product-option-button" data-option="color" data-value="Xanh" onclick="selectProductOption('color', 'Xanh', this)" style="background:#00c2ff;"></button>
+                            </div>
+                        </div>
+                        <div class="product-option-group">
+                            <div class="option-label">Size</div>
+                            <div class="option-size-list">
+                                <button type="button" class="option-size product-option-button active" data-option="size" data-value="M" onclick="selectProductOption('size', 'M', this)">M</button>
+                                <button type="button" class="option-size product-option-button" data-option="size" data-value="L" onclick="selectProductOption('size', 'L', this)">L</button>
+                                <button type="button" class="option-size product-option-button" data-option="size" data-value="XL" onclick="selectProductOption('size', 'XL', this)">XL</button>
+                                <button type="button" class="option-size product-option-button" data-option="size" data-value="XXL" onclick="selectProductOption('size', 'XXL', this)">XXL</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selected-options">Đã chọn: <span id="selected-color-label">Đen</span> • <span id="selected-size-label">M</span></div>
+                </div>
                 <p class="product-detail-description">${product.description}</p>
                 <div class="product-detail-price">${product.price.toLocaleString()}đ</div>
                 <div class="quantity-control">
@@ -1586,6 +1611,24 @@ function updateDetailQuantity(change) {
     quantityInput.value = next;
 }
 
+function selectProductOption(optionName, value, element) {
+    const buttons = document.querySelectorAll(`.product-option-button[data-option="${optionName}"]`);
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn === element);
+    });
+
+    const label = document.getElementById(`selected-${optionName}-label`);
+    if (label) {
+        label.textContent = value;
+    }
+}
+
+function getSelectedProductOptions() {
+    const color = document.querySelector('.product-option-button[data-option="color"].active')?.dataset.value || 'Đen';
+    const size = document.querySelector('.product-option-button[data-option="size"].active')?.dataset.value || 'M';
+    return { color, size };
+}
+
 // ==================== LOGIN REQUIREMENT HELPER ====================
 function requireLoginBeforeAction() {
     if (!isLoggedIn()) {
@@ -1610,12 +1653,13 @@ async function addProductDetailToCart() {
     const productId = getQueryParam('id');
     const quantity = Number(document.getElementById('detailQuantity')?.value) || 1;
     if (!productId) return;
+    const { color, size } = getSelectedProductOptions();
     await addToCart(productId, quantity);
     updateCartCount();
     if (typeof displayCart === 'function') {
         displayCart();
     }
-    alert('Đã thêm vào giỏ hàng: ' + quantity + ' sản phẩm');
+    alert(`Đã thêm vào giỏ: ${quantity} sản phẩm - Màu ${color}, Size ${size}`);
 }
 
 async function getUserPurchaseHistory() {
@@ -1833,7 +1877,7 @@ async function quickAdd(productId) {
     
     const product = getProductById(productId);
     if (!product) return;
-    await addToCart(productId);
+    await addToCart(productId, 1, { color: 'Đen', size: 'M' });
     updateCartCount();
     if (typeof displayCart === 'function') {
         displayCart();

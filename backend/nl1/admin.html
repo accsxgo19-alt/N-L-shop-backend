@@ -35,91 +35,86 @@
         </div>
     </nav>
 
-        <main class="admin-shell">
+        <main class="admin-shell admin-page-shell">
             <div class="container">
-                <section class="admin-dashboard-panel">
-                        <div class="page-header admin-hero">
-                <div class="page-label">Khu vực quản lý</div>
-                <h2>Dashboard quản lý Admin</h2>
-                <p>Quản lý sản phẩm, đơn hàng, tài khoản, doanh số và tương tác khách hàng.</p>
-            </div>
-
-            <div class="dashboard-grid admin-kpi-grid">
-            <div class="dashboard-card">
-                <h3>Doanh số hôm nay</h3>
-                <p id="salesToday">0đ</p>
-            </div>
-            <div class="dashboard-card">
-                <h3>Doanh số tháng</h3>
-                <p id="salesMonth">0đ</p>
-            </div>
-            <div class="dashboard-card">
-                <h3>Doanh số năm</h3>
-                <p id="salesYear">0đ</p>
-            </div>
-            <div class="dashboard-card">
-                <h3>Lợi nhuận ước tính</h3>
-                <p id="profitEstimate">0đ</p>
-            </div>
-            <div class="dashboard-card">
-                <h3>Tỉ lệ quay lại</h3>
-                <p id="repeatRate">0%</p>
-            </div>
-            <div class="dashboard-card">
-                <h3>Độ hài lòng</h3>
-                <p id="satisfactionRate">0%</p>
-            </div>
-        </div>
-
-        <div class="dashboard-section category-section">
-            <div class="section-header">
-                <div>
-                    <span class="badge vip">Xếp hạng</span>
-                    <h3>Thống kê theo danh mục</h3>
-                </div>
-                <span class="panel-tag muted">VIP Insight</span>
-            </div>
-            <div id="categoryStats" class="category-stats"></div>
-        </div>
-
-        <div class="dashboard-grid vip-dashboard-grid">
-            <div class="dashboard-panel vip-card">
-                <div class="vip-panel-header">
-                    <div>
-                        <span class="badge vip">Top</span>
-                        <h3>Sản phẩm bán chạy</h3>
+                <section class="admin-hero">
+                    <div class="page-header">
+                        <div class="page-label">Khu vực quản lý</div>
+                        <h1>Dashboard quản lý Admin</h1>
+                        <p>Quản lý sản phẩm, đơn hàng, tài khoản, doanh thu và hoạt động của hệ thống.</p>
                     </div>
-                    <span class="panel-tag">HOT</span>
-                </div>
-                <div id="bestSellers" class="vip-stat-list"></div>
-            </div>
-            <div class="dashboard-panel vip-card">
-                <div class="vip-panel-header">
-                    <div>
-                        <span class="badge vip">Trend</span>
-                        <h3>Sản phẩm ít tương tác</h3>
-                    </div>
-                    <span class="panel-tag muted">Tăng tốc</span>
-                </div>
-                <div id="lowInteraction" class="vip-stat-list"></div>
-            </div>
-        </div>
+                </section>
 
-        <div class="dashboard-section admin-two-col">
-            <div class="admin-card admin-wide">
-                <h3>Quản lý sản phẩm</h3>
-                <div class="product-management-grid">
-                    <div class="product-premium-banner">
-                        <div class="banner-content">
-                            <span class="badge vip">VIP PRO</span>
+                <section class="admin-kpi-grid dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Doanh số hôm nay</h3>
+                        <p id="salesToday">0đ</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Doanh số tháng</h3>
+                        <p id="salesMonth">0đ</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Doanh số năm</h3>
+                        <p id="salesYear">0đ</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Lợi nhuận ước tính</h3>
+                        <p id="profitEstimate">0đ</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Tỉ lệ quay lại</h3>
+                        <p id="repeatRate">0%</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Độ hài lòng</h3>
+                        <p id="satisfactionRate">0%</p>
+                    </div>
+                </section>
+
+                <section class="admin-section admin-category-section">
+                    <div class="admin-section-header">
+                        <div>
+                            <span class="section-eyebrow">Xếp hạng</span>
+                            <h3>Thống kê theo danh mục</h3>
+                        </div>
+                        <span class="panel-tag muted">VIP Insight</span>
+                    </div>
+                    <div id="categoryStats" class="category-stats"></div>
+                </section>
+
+                <section class="admin-two-column">
+                    <div class="admin-section">
+                        <div class="admin-section-header">
                             <div>
-                                <h4>Phiên bản quản lý cao cấp</h4>
-                                <p class="form-subtitle">Tối ưu hiển thị, cập nhật giá và ảnh sản phẩm chuyên nghiệp.</p>
+                                <span class="section-eyebrow">Top</span>
+                                <h3>Sản phẩm bán chạy</h3>
                             </div>
+                            <span class="panel-tag">HOT</span>
+                        </div>
+                        <div id="bestSellers" class="vip-stat-list"></div>
+                    </div>
+                    <div class="admin-section">
+                        <div class="admin-section-header">
+                            <div>
+                                <span class="section-eyebrow">Trend</span>
+                                <h3>Sản phẩm ít tương tác</h3>
+                            </div>
+                            <span class="panel-tag muted">Tăng tốc</span>
+                        </div>
+                        <div id="lowInteraction" class="vip-stat-list"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section admin-products-section">
+                    <div class="admin-section-header admin-section-header--left">
+                        <div>
+                            <h3>Quản lý sản phẩm</h3>
+                            <p>Thêm, sửa, xóa và theo dõi thông tin sản phẩm.</p>
                         </div>
                     </div>
-                    <div class="product-editor-body">
-                        <form id="productForm" class="admin-form premium-form">
+                    <div class="admin-product-editor">
+                        <form id="productForm" class="admin-form product-form-panel">
                             <div class="form-fields">
                                 <div class="form-row">
                                     <div>
@@ -128,25 +123,35 @@
                                     </div>
                                     <div>
                                         <label for="productCategory">Danh mục</label>
-                                        <input type="text" id="productCategory" placeholder="Danh mục" required>
+                                        <select id="productCategory" required>
+                                            <option value="">Chọn danh mục</option>
+                                            <option value="Áo">Áo</option>
+                                            <option value="Quần">Quần</option>
+                                            <option value="Váy">Váy</option>
+                                            <option value="Giày">Giày</option>
+                                            <option value="Phụ kiện">Phụ kiện</option>
+                                        </select>
                                     </div>
                                 </div>
+
                                 <div class="form-row">
                                     <div>
                                         <label for="productPrice">Giá sản phẩm</label>
                                         <input type="number" id="productPrice" placeholder="Giá" required>
                                     </div>
                                     <div>
-                                        <label for="productImage">Ảnh sản phẩm (URL / Emoji)</label>
+                                        <label for="productImage">Ảnh sản phẩm URL / Emoji</label>
                                         <input type="text" id="productImage" placeholder="Icon/Emoji" required>
                                     </div>
                                 </div>
+
                                 <div class="form-row form-row-full">
                                     <div>
                                         <label for="productImageFile">Hoặc chọn ảnh từ máy</label>
                                         <input type="file" id="productImageFile" accept="image/*">
                                     </div>
                                 </div>
+
                                 <div class="form-row">
                                     <div>
                                         <label for="productRating">Đánh giá</label>
@@ -157,101 +162,94 @@
                                         <input type="number" id="productSold" placeholder="Đã bán" min="0" required>
                                     </div>
                                 </div>
+
                                 <div class="form-row form-row-full">
                                     <div>
                                         <label for="productDescription">Mô tả sản phẩm</label>
                                         <textarea id="productDescription" placeholder="Mô tả" rows="4" required></textarea>
                                     </div>
                                 </div>
+
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-primary btn-xl">Lưu thay đổi sản phẩm</button>
                                     <input type="hidden" id="productId" value="">
                                 </div>
                             </div>
                         </form>
-                        <div class="preview-panel">
-                            <div class="preview-card" id="productPreview">
-                                <div class="preview-top">
-                                    <span class="badge premium">PREMIUM</span>
-                                    <div class="preview-image" id="previewImage">🎁</div>
-                                </div>
+
+                        <aside class="product-preview-panel">
+                            <div class="product-card product-card-preview" id="productPreview">
+                                <div class="product-image preview-image" id="previewImage">🎁</div>
                                 <div class="preview-body">
-                                    <div class="preview-category" id="previewCategory">Danh mục</div>
-                                    <h3 id="previewName">Tên sản phẩm</h3>
-                                    <div class="preview-price" id="previewPrice">0đ</div>
+                                    <div class="product-category preview-category" id="previewCategory">Danh mục</div>
+                                    <h3 class="product-name" id="previewName">Tên sản phẩm</h3>
                                     <div class="preview-meta">
                                         <span id="previewRating">⭐ 0.0</span>
                                         <span id="previewSold">0 đã bán</span>
                                     </div>
-                                    <p id="previewDescription">Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.</p>
+                                    <p class="preview-description" id="previewDescription">Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.</p>
+                                    <div class="product-price preview-price" id="previewPrice">0đ</div>
                                 </div>
                             </div>
+                        </aside>
+                    </div>
+                    <div id="productMessage" class="success-message"></div>
+                    <div class="admin-table-wrap">
+                        <div id="productTable" class="admin-table"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section admin-orders-section">
+                    <div class="admin-section-header">
+                        <span class="section-eyebrow">Orders</span>
+                        <div>
+                            <h3>Quản lý đơn hàng</h3>
+                            <p>Theo dõi, duyệt và cập nhật trạng thái đơn hàng.</p>
                         </div>
                     </div>
-                </div>
-                <div id="productMessage" class="success-message"></div>
-                <div class="admin-table-scroll">
-                    <div id="productTable" class="admin-table"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section admin-two-col">
-            <div class="admin-card admin-medium">
-                <h3>Thời gian sử dụng trang</h3>
-                <div id="activitySummary" class="stats-list"></div>
-                <div id="activityLog" class="activity-log"></div>
-            </div>
-            <div class="admin-card admin-medium">
-                <h3>Đơn chờ duyệt</h3>
-                <div class="admin-table-scroll">
-                    <div id="pendingOrders" class="admin-table"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section admin-two-col">
-            <section class="admin-section admin-orders-section admin-medium">
-                <div class="admin-section-header">
-                    <div>
-                        <span class="section-eyebrow">Orders</span>
-                        <h2>Quản lý đơn hàng</h2>
-                        <p>Theo dõi, duyệt và cập nhật trạng thái đơn hàng của khách.</p>
-                    </div>
-                </div>
-                <div class="admin-table-wrapper">
-                    <div class="admin-table-scroll">
+                    <div class="admin-table-wrap">
                         <div id="orderTable" class="admin-table"></div>
                     </div>
-                </div>
-            </section>
-            <div class="admin-card admin-medium">
-                <h3>Quản lý tài khoản</h3>
-                <div class="admin-table-scroll">
-                    <div id="userTable" class="admin-table"></div>
-                </div>
-            </div>
-        </div>
+                </section>
 
-        <div class="dashboard-section admin-two-col">
-            <div class="admin-card admin-medium">
-                <h3>Lịch sử giao dịch</h3>
-                <div class="admin-table-scroll">
-                    <div id="transactionTable" class="admin-table"></div>
-                </div>
+                <section class="admin-section admin-users-section">
+                    <h3>Quản lý tài khoản</h3>
+                    <div class="admin-table-wrap">
+                        <div id="userTable" class="admin-table"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section admin-transactions-section">
+                    <h3>Lịch sử giao dịch</h3>
+                    <div class="admin-table-wrap">
+                        <div id="transactionTable" class="admin-table"></div>
+                    </div>
+                </section>
+
+                <section class="admin-two-column">
+                    <div class="admin-section admin-pending-section">
+                        <h3>Đơn chờ duyệt</h3>
+                        <div class="admin-table-wrap no-scroll-when-empty">
+                            <div id="pendingOrders" class="admin-table"></div>
+                        </div>
+                    </div>
+                    <div class="admin-section admin-activity-section">
+                        <h3>Thời gian sử dụng trang</h3>
+                        <div id="activitySummary" class="stats-list"></div>
+                        <div id="activityLog" class="activity-log"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section admin-chat-section">
+                    <h3>Chatbox Admin</h3>
+                    <div id="chatMessages" class="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chatInput" placeholder="Nhập tin nhắn...">
+                        <button class="btn btn-primary" id="sendChatBtn">Gửi</button>
+                    </div>
+                </section>
             </div>
-            <div class="admin-card admin-medium admin-chat">
-                <h3>Chatbox Admin</h3>
-                <div id="chatMessages" class="chat-messages"></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chatInput" placeholder="Nhập tin nhắn...">
-                    <button class="btn btn-primary" id="sendChatBtn">Gửi</button>
-                </div>
-            </div>
-        </div>
-        </section>
-      </div>
-    </main>
+        </main>
 
     <footer class="footer">
         <div class="container">
@@ -289,6 +287,7 @@
                 const input = document.getElementById(id);
                 if (input) {
                     input.addEventListener('input', updateProductPreview);
+                    input.addEventListener('change', updateProductPreview);
                 }
             });
             const imageFileInput = document.getElementById('productImageFile');
@@ -301,6 +300,10 @@
                         const imageInput = document.getElementById('productImage');
                         if (imageInput) {
                             imageInput.value = reader.result;
+                        }
+                        const previewImage = document.getElementById('previewImage');
+                        if (previewImage && reader.result) {
+                            previewImage.innerHTML = `<img class="preview-img" src="${reader.result}" alt="Ảnh sản phẩm">`;
                         }
                         updateProductPreview();
                     };
@@ -346,7 +349,11 @@
             const previewImage = document.getElementById('previewImage');
             if (previewImage) {
                 const isUrl = image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:image/');
-                previewImage.innerHTML = isUrl ? `<img src="${image}" alt="Ảnh sản phẩm">` : image || '🎁';
+                if (isUrl) {
+                    previewImage.innerHTML = `<img class="preview-img" src="${image}" alt="Ảnh sản phẩm">`;
+                } else {
+                    previewImage.textContent = image || '🎁';
+                }
             }
         }
 
@@ -633,7 +640,7 @@
             const orders = getAllOrders().filter(order => order.status === 'pending');
             const rows = orders.map((order, index) => {
                 return `
-                    <div class="admin-row vip-table-row vip-order-row pending-order-row">
+                    <div class="admin-row vip-table-row vip-pending-row">
                         <div class="row-id">${index + 1}</div>
                         <div>${order.id}</div>
                         <div>${new Date(order.date).toLocaleDateString('vi-VN')}</div>
@@ -645,7 +652,7 @@
             }).join('');
 
             document.getElementById('pendingOrders').innerHTML = orders.length ? `
-                <div class="admin-row header vip-table-header vip-order-header">
+                <div class="admin-row header vip-table-header vip-pending-header">
                     <div>#</div>
                     <div>ID</div>
                     <div>Ngày</div>
@@ -850,7 +857,7 @@ async function changeOrderStatus(orderId, newStatus) {
             `;
             const events = summary.logs.slice(-10).reverse().map(log => `
                 <div class="activity-item">
-                    <div><strong>${log.fullname}</strong> (${log.userEmail})</div>
+                    <div class="activity-user"><strong>${log.fullname}</strong><span>${log.userEmail}</span></div>
                     <div>${new Date(log.createdAt).toLocaleString('vi-VN')}</div>
                     <div>Thời gian: ${log.duration || 0}s</div>
                 </div>
