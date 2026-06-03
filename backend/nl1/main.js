@@ -1,15 +1,10 @@
 // ==================== PRODUCTS DATA ====================
 const LOCAL_BACKEND_ORIGIN = 'http://localhost:5000';
-
-// Allow an explicit override for static hosting (Live Server / GitHub Pages)
-// Usage: before loading main.js, set `window.API_BASE_OVERRIDE = 'https://your-backend.example'`
-const API_BASE = (typeof window !== 'undefined' && window.API_BASE_OVERRIDE)
-    ? window.API_BASE_OVERRIDE
-    : (window.location.protocol === 'file:'
+const API_BASE = window.location.protocol === 'file:'
+    ? LOCAL_BACKEND_ORIGIN
+    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? LOCAL_BACKEND_ORIGIN
-        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? LOCAL_BACKEND_ORIGIN
-            : window.location.origin);
+        : window.location.origin;
 
 const STORAGE_PRODUCTS_KEY = 'products';
 const STORAGE_ACTIVITY_KEY = 'activityLogs';
@@ -42,76 +37,6 @@ function normalizeProducts(productList) {
         ...product,
         id: String(product.id || product._id || product._id || product.id || ''),
     }));
-}
-
-// ==================== CACHE HELPERS FOR PERFORMANCE ====================
-function safeJsonParse(str, fallback = null) {
-    try {
-        return str ? JSON.parse(str) : fallback;
-    } catch (e) {
-        console.warn('JSON parse error:', e);
-        return fallback;
-    }
-}
-
-function getProductsCache() {
-    try {
-        const cached = sessionStorage.getItem('products_cache');
-        const cacheTime = sessionStorage.getItem('products_cache_time');
-        if (!cached || !cacheTime) return null;
-        
-        const age = Date.now() - parseInt(cacheTime, 10);
-        if (age > 30000) {
-            clearProductsCache();
-            return null;
-        }
-        
-        return safeJsonParse(cached, null);
-    } catch (e) {
-        console.warn('Cache retrieval error:', e);
-        return null;
-    }
-}
-
-function setProductsCache(products) {
-    try {
-        sessionStorage.setItem('products_cache', JSON.stringify(products));
-        sessionStorage.setItem('products_cache_time', String(Date.now()));
-    } catch (e) {
-        console.warn('Cache storage error:', e);
-    }
-}
-
-function clearProductsCache() {
-    try {
-        sessionStorage.removeItem('products_cache');
-        sessionStorage.removeItem('products_cache_time');
-        sessionStorage.removeItem('selected_product');
-    } catch (e) {
-        console.warn('Cache clear error:', e);
-    }
-}
-
-function renderProductSkeleton(count = 4) {
-    const container = document.getElementById('productsContainer');
-    if (!container) return;
-    
-    let skeletons = '';
-    for (let i = 0; i < count; i++) {
-        skeletons += `
-            <div class="product-card skeleton-loader">
-                <div class="skeleton-image"></div>
-                <div class="skeleton-body">
-                    <div class="skeleton-text skeleton-title"></div>
-                    <div class="skeleton-text skeleton-category"></div>
-                    <div class="skeleton-text skeleton-rating"></div>
-                    <div class="skeleton-text skeleton-price"></div>
-                </div>
-                <div class="skeleton-actions"></div>
-            </div>
-        `;
-    }
-    container.innerHTML = skeletons;
 }
 
 const products = [
@@ -1409,7 +1334,7 @@ function getProductById(id) {
 
 function getAllProducts() {
     const cached = window.__productsCache;
-    if (cached && Array.isArray(cached) && cached.length > 0) {
+    if (cached && Array.isArray(cached)) {
         return cached;
     }
     return getStoredProducts();
@@ -1438,9 +1363,8 @@ async function syncProductsFromServer() {
 }
 
 
-function filterProducts(searchTerm = '', category = '', products = null) {
-    const productList = products || getAllProducts();
-    return productList.filter(product => {
+function filterProducts(searchTerm = '', category = '') {
+    return getAllProducts().filter(product => {
         const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             product.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchCategory = category === '' || product.category === category;
@@ -1497,53 +1421,11 @@ async function loadProductDetail() {
         return;
     }
 
-    // Try to load from sessionStorage first for quick display
-    let product = null;
-    try {
-        const cached = sessionStorage.getItem('selected_product');
-        if (cached) {
-            const cachedProduct = safeJsonParse(cached, null);
-            if (cachedProduct && (String(cachedProduct.id) === String(productId) || String(cachedProduct._id) === String(productId))) {
-                product = cachedProduct;
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to load cached product:', e);
-    }
-
-    // Show cached product immediately if available
-    if (product) {
-        renderProductDetailUI(product, container, editMode, productId);
-    } else {
-        // Show loading state if no cache
-        if (container) {
-            container.innerHTML = '<div class="empty-message">Đang tải sản phẩm...</div>';
-        }
-    }
-
-    // Always fetch fresh data from API in the background
-    const freshProduct = await fetchProductFromServer(productId);
-    if (!freshProduct) {
-        const fallback = getProductById(productId);
-        if (fallback) {
-            product = fallback;
-        }
-    } else {
-        product = freshProduct;
-    }
-
+    let product = await fetchProductFromServer(productId);
     if (!product) {
-        if (container) {
-            container.innerHTML = '<div class="empty-message">Sản phẩm không tồn tại. <a href="index.html">Quay lại</a></div>';
-        }
-        return;
+        product = getProductById(productId);
     }
 
-    // Update UI with fresh data
-    renderProductDetailUI(product, container, editMode, productId);
-}
-
-function renderProductDetailUI(product, container, editMode, productId) {
     const rating = Number(product?.rating) || 0;
     const sold = Number(product?.sold) || 0;
     const detailMeta = rating
@@ -1551,6 +1433,10 @@ function renderProductDetailUI(product, container, editMode, productId) {
         : sold
             ? `<div class="product-detail-rating">Đã bán ${sold}</div>`
             : '';
+    if (!product) {
+        container.innerHTML = '<div class="empty-message">Sản phẩm không tồn tại. <a href="index.html">Quay lại</a></div>';
+        return;
+    }
 
     if (editMode && isAdmin()) {
         container.innerHTML = `
@@ -1633,7 +1519,6 @@ function renderProductDetailUI(product, container, editMode, productId) {
         return;
     }
 
-    // Normal product detail view
     container.innerHTML = `
         <div class="product-detail-card">
             <div class="product-detail-image">${renderProductImage(product.image)}</div>
@@ -1824,7 +1709,6 @@ async function deleteProductFromServer(productId) {
         }
 
         // Clear known caches so UI always reloads from server
-        clearProductsCache();
         localStorage.removeItem(STORAGE_PRODUCTS_KEY);
         localStorage.removeItem('shopProducts');
         localStorage.removeItem('cachedProducts');
@@ -1900,7 +1784,6 @@ async function saveProductEdit(productId) {
         }
 
         // Clear known caches so UI always reloads from server
-        clearProductsCache();
         localStorage.removeItem(STORAGE_PRODUCTS_KEY);
         localStorage.removeItem('shopProducts');
         localStorage.removeItem('cachedProducts');
@@ -1919,16 +1802,6 @@ async function saveProductEdit(productId) {
 }
 
 function viewProduct(productId) {
-    // Save the product to sessionStorage for quick display on product.html
-    try {
-        const product = getProductById(productId);
-        if (product) {
-            sessionStorage.setItem('selected_product', JSON.stringify(product));
-        }
-    } catch (e) {
-        console.warn('Failed to save selected product to sessionStorage:', e);
-    }
-    
     window.location.href = 'product.html?id=' + encodeURIComponent(productId);
 }
 
@@ -2127,64 +2000,19 @@ function loadProducts(searchTerm = '', category = '') {
     const container = document.getElementById('productsContainer');
     if (!container) return;
 
-    // Show skeleton immediately for better UX
-    renderProductSkeleton(4);
-
-    // Check if there's valid cache (under 30 seconds old)
-    const cachedProducts = getProductsCache();
-    let filteredProducts = [];
-
-    if (cachedProducts && cachedProducts.length > 0) {
-        filteredProducts = filterProducts(searchTerm, category, cachedProducts);
-        if (filteredProducts.length > 0) {
-            renderProducts(filteredProducts);
-        }
-    }
-
-    // Always fetch fresh data from API in the background
-    fetch(`${API_BASE}/api/products`, { headers: getAuthHeaders() })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-            if (data && Array.isArray(data)) {
-                const normalized = normalizeProducts(data);
-                setProductsCache(normalized);
-                
-                // Re-filter with fresh data
-                filteredProducts = filterProducts(searchTerm, category, normalized);
-                
-                if (filteredProducts.length === 0) {
-                    container.innerHTML = '<div class="empty-message">Không tìm thấy sản phẩm nào</div>';
-                } else {
-                    renderProducts(filteredProducts);
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Failed to fetch products from API:', error);
-            // If API fails but we have cache, keep showing it
-            if (!cachedProducts || cachedProducts.length === 0) {
-                container.innerHTML = '<div class="empty-message">Không thể tải sản phẩm. Vui lòng thử lại.</div>';
-            }
-        });
-}
-
-function renderProducts(products) {
-    const container = document.getElementById('productsContainer');
-    if (!container || !Array.isArray(products)) return;
-
+    const filteredProducts = filterProducts(searchTerm, category);
     container.innerHTML = '';
 
-    if (products.length === 0) {
+    if (filteredProducts.length === 0) {
         container.innerHTML = '<div class="empty-message">Không tìm thấy sản phẩm nào</div>';
         return;
     }
 
-    products.forEach(product => {
+    filteredProducts.forEach(product => {
         const card = createProductCard(product);
         container.appendChild(card);
     });
 }
-
 
 function createProductCard(product) {
     const card = document.createElement('div');

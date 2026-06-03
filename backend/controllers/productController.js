@@ -1,20 +1,24 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 
 const createProduct = async (req, res) => {
   try {
-    const { name, image, price, category, description, stock } = req.body;
+    const { id, name, image, price, category, description, stock, rating, sold } = req.body;
 
     if (!name || price == null || !category || !description || stock == null) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin sản phẩm.' });
     }
 
     const product = await Product.create({
+      id: id || undefined,
       name,
       image,
       price,
       category,
       description,
       stock,
+      rating: rating ?? 0,
+      sold: sold ?? 0,
     });
 
     res.status(201).json({ message: 'Tạo sản phẩm thành công.', product });
@@ -36,7 +40,13 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    let product = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    }
+    if (!product) {
+      product = await Product.findOne({ id: req.params.id });
+    }
     if (!product) {
       return res.status(404).json({ message: 'Sản phẩm không tìm thấy.' });
     }
@@ -49,19 +59,28 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const { name, image, price, category, description, stock } = req.body;
-    const product = await Product.findById(req.params.id);
+    const { name, image, price, category, description, stock, rating, sold, id } = req.body;
+    let product = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    }
+    if (!product) {
+      product = await Product.findOne({ id: req.params.id });
+    }
 
     if (!product) {
       return res.status(404).json({ message: 'Sản phẩm không tìm thấy.' });
     }
 
+    product.id = id ?? product.id;
     product.name = name ?? product.name;
     product.image = image ?? product.image;
     product.price = price ?? product.price;
     product.category = category ?? product.category;
     product.description = description ?? product.description;
     product.stock = stock ?? product.stock;
+    product.rating = rating ?? product.rating;
+    product.sold = sold ?? product.sold;
 
     await product.save();
     res.json({ message: 'Cập nhật sản phẩm thành công.', product });
@@ -73,7 +92,13 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    let product = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    }
+    if (!product) {
+      product = await Product.findOne({ id: req.params.id });
+    }
     if (!product) {
       return res.status(404).json({ message: 'Sản phẩm không tìm thấy.' });
     }
