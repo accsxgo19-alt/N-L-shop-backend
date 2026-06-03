@@ -103,7 +103,7 @@
                 </div>
         </div>
 
-        <script src="main.js"></script>
+        <script src="./main.js"></script>
         <script>
 (function () {
     const POPUP_CLOSED_KEY = 'emailPopupClosed';
@@ -280,19 +280,17 @@
         if (searchInput) searchInput.value = '';
         if (categoryFilter) categoryFilter.value = '';
 
-        if (typeof loadProducts === 'function') {
-            loadProducts('', '');
+        // Prefer API-first: sync from server before rendering products to avoid transient local-only items
+        if (typeof syncProductsFromServer === 'function') {
+            await syncProductsFromServer().catch(() => {});
         }
 
         if (typeof setupSearchAndFilter === 'function') {
             setupSearchAndFilter();
         }
 
-        if (typeof syncProductsFromServer === 'function') {
-            await syncProductsFromServer().catch(() => {});
-            if (typeof loadProducts === 'function') {
-                loadProducts('', '');
-            }
+        if (typeof loadProducts === 'function') {
+            loadProducts('', '');
         }
 
         if (typeof showEmailPopupSafely === 'function') {
