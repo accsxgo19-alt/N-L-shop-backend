@@ -1596,19 +1596,89 @@ function setupProductEditForm() {
     }
 }
 
-async function fetchProductFromServer(productId) {
-    if (!productId) return null;
+function isValidMongoId(value) {
+    return /^[0-9a-fA-F]{24}$/.test(String(value).trim());
+}
+
+async function getAllProductsFromServer() {
     try {
-        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`);
+        const response = await fetch(`${API_BASE}/api/products`);
         if (!response.ok) return null;
-        const product = await response.json();
-        return {
+        const data = await response.json();
+        if (!Array.isArray(data)) return null;
+        return data.map(product => ({
             ...product,
             id: String(product.id || product._id || ''),
-        };
+        }));
     } catch (error) {
         return null;
     }
+}
+
+async function findServerProductByIdentifier(productId) {
+    if (!productId) return null;
+    const normalizedId = String(productId).trim();
+    const products = await getAllProductsFromServer();
+    if (!products) return null;
+
+    const exactProduct = products.find(p => String(p._id) === normalizedId || String(p.id) === normalizedId);
+    if (exactProduct) {
+        return exactProduct;
+    }
+
+    const localProduct = getProductById(normalizedId);
+    if (localProduct) {
+        const fallbackProduct = products.find(p =>
+            p.name === localProduct.name &&
+            String(p.price) === String(localProduct.price) &&
+            p.category === localProduct.category &&
+            p.description === localProduct.description
+        );
+        if (fallbackProduct) {
+            return fallbackProduct;
+        }
+    }
+
+    return null;
+}
+
+async function fetchProductFromServer(productId) {
+    if (!productId) return null;
+    const normalizedId = String(productId).trim();
+    let product = null;
+
+    if (isValidMongoId(normalizedId)) {
+        try {
+            const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(normalizedId)}`);
+            if (response.ok) {
+                product = await response.json();
+            }
+        } catch (error) {
+            product = null;
+        }
+    }
+
+    if (!product) {
+        product = await findServerProductByIdentifier(normalizedId);
+    }
+
+    if (!product) return null;
+    return {
+        ...product,
+        id: String(product.id || product._id || ''),
+    };
+}
+
+async function resolveProductMongoId(productId) {
+    if (!productId) return null;
+    const normalizedId = String(productId).trim();
+    if (isValidMongoId(normalizedId)) {
+        return normalizedId;
+    }
+
+    const product = await findServerProductByIdentifier(normalizedId);
+    if (!product) return null;
+    return String(product._id || product.id || '');
 }
 
 async function saveProductEdit(productId) {
@@ -1646,7 +1716,13 @@ async function saveProductEdit(productId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
+        const actualProductId = await resolveProductMongoId(productId);
+        if (!actualProductId) {
+            alert('Không tìm thấy sản phẩm trên server để cập nhật.');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(actualProductId)}`, {
             method: 'PUT',
             headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
             body: JSON.stringify({
@@ -1666,23 +1742,7 @@ async function saveProductEdit(productId) {
             throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
         }
 
-        const updatedProduct = result.product || result;
-        if (updatedProduct) {
-            const products = getAllProducts();
-            const index = products.findIndex(p => String(p.id) === String(productId));
-            const normalized = {
-                ...products[index],
-                ...updatedProduct,
-                id: String(updatedProduct.id || updatedProduct._id || productId),
-            };
-            if (index !== -1) {
-                products[index] = normalized;
-            } else {
-                products.push(normalized);
-            }
-            saveProducts(products);
-        }
-
+        localStorage.removeItem(STORAGE_PRODUCTS_KEY);
         await syncProductsFromServer();
 
         alert('Cập nhật sản phẩm thành công.');
