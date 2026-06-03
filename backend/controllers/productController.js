@@ -5,7 +5,7 @@ const createProduct = async (req, res) => {
   try {
     const { id, name, image, price, category, description, stock, rating, sold } = req.body;
 
-    if (!name || price == null || !category || !description || stock == null) {
+    if (!name || price == null || !category || !description) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin sản phẩm.' });
     }
 
@@ -13,17 +13,20 @@ const createProduct = async (req, res) => {
       id: id || undefined,
       name,
       image,
-      price,
+      price: Number(price),
       category,
       description,
-      stock,
-      rating: rating ?? 0,
-      sold: sold ?? 0,
+      stock: stock != null ? Number(stock) : 10,
+      rating: rating != null ? Number(rating) : 0,
+      sold: sold != null ? Number(sold) : 0,
     });
 
     res.status(201).json({ message: 'Tạo sản phẩm thành công.', product });
   } catch (error) {
     console.error(error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Dữ liệu sản phẩm không hợp lệ.' });
+    }
     res.status(500).json({ message: 'Lỗi server khi tạo sản phẩm.' });
   }
 };

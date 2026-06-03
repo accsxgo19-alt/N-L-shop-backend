@@ -343,15 +343,20 @@
         function updateProductPreview() {
             const name = document.getElementById('productName')?.value.trim() || 'Tên sản phẩm';
             const category = document.getElementById('productCategory')?.value.trim() || 'Danh mục';
-            const price = Number(document.getElementById('productPrice')?.value) || 0;
+            const rawPrice = document.getElementById('productPrice')?.value;
+            const price = Number(rawPrice !== undefined && rawPrice !== null ? rawPrice : 0);
             const image = document.getElementById('productImage')?.value.trim() || '🎁';
             const rating = Number(document.getElementById('productRating')?.value) || 4.5;
             const sold = Number(document.getElementById('productSold')?.value) || 0;
             const description = document.getElementById('productDescription')?.value.trim() || 'Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.';
+            const previewPrice = document.getElementById('previewPrice');
 
             document.getElementById('previewName').textContent = name;
             document.getElementById('previewCategory').textContent = category;
-            document.getElementById('previewPrice').textContent = formatCurrency(price);
+            if (previewPrice) {
+                previewPrice.textContent = formatCurrency(Number.isFinite(price) ? price : 0);
+                previewPrice.style.display = 'block';
+            }
             document.getElementById('previewRating').textContent = `⭐ ${rating.toFixed(1)}`;
             document.getElementById('previewSold').textContent = `${sold} đã bán`;
             document.getElementById('previewDescription').textContent = description;
@@ -471,9 +476,13 @@
 
                 if (!response.ok) {
                     const result = await response.json().catch(() => ({}));
-                    throw new Error(result.message || 'Không thể lưu sản phẩm lên server.');
+                    const serverMessage = result && result.message ? result.message : `Lỗi server: ${response.status}`;
+                    message.textContent = serverMessage;
+                    return;
                 }
 
+                window.__productsCache = null;
+                window.__productsSyncStatus = 'pending';
                 localStorage.removeItem('products');
                 localStorage.removeItem('shopProducts');
                 localStorage.removeItem('cachedProducts');
@@ -488,7 +497,7 @@
                 return;
             } catch (err) {
                 console.warn(err);
-                message.textContent = 'Không thể lưu sản phẩm lên server. Vui lòng kiểm tra lại kết nối hoặc quyền admin.';
+                message.textContent = err.message || 'Không thể lưu sản phẩm lên server. Vui lòng kiểm tra lại kết nối hoặc quyền admin.';
                 return;
             }
         }

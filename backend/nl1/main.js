@@ -13,6 +13,9 @@ const STORAGE_CURRENT_USER_KEY = 'currentUser';
 const STORAGE_CART_KEY = 'cart';
 const STORAGE_ORDERS_KEY = 'orders';
 
+window.__productsCache = null;
+window.__productsSyncStatus = 'pending';
+
 const GOOGLE_CLIENT_ID = '395352824030-8a7c29ru5rr3fs3heg7us836f4kb40a8.apps.googleusercontent.com';
 const FB_APP_ID = '3291612877757407';
 let googleTokenClient = null;
@@ -1334,8 +1337,11 @@ function getProductById(id) {
 
 function getAllProducts() {
     const cached = window.__productsCache;
-    if (cached && Array.isArray(cached)) {
+    if (Array.isArray(cached)) {
         return cached;
+    }
+    if (window.__productsSyncStatus === 'success') {
+        return [];
     }
     return getStoredProducts();
 }
@@ -1352,13 +1358,20 @@ async function syncProductsFromServer() {
                 }));
                 // Always replace cache with server response (may be empty [])
                 window.__productsCache = normalized;
-            } else {
-                // If server returned unexpected payload, clear cache to avoid stale local data
-                window.__productsCache = [];
+                window.__productsSyncStatus = 'success';
+                return normalized;
             }
+            window.__productsCache = [];
+            window.__productsSyncStatus = 'success';
+            return [];
         }
+        console.warn('Đồng bộ sản phẩm thất bại, server trả lỗi:', res.status);
+        window.__productsSyncStatus = 'failed';
+        return null;
     } catch (err) {
         console.warn('Không thể đồng bộ sản phẩm từ server:', err);
+        window.__productsSyncStatus = 'failed';
+        return null;
     }
 }
 
@@ -1709,6 +1722,8 @@ async function deleteProductFromServer(productId) {
         }
 
         // Clear known caches so UI always reloads from server
+        window.__productsCache = null;
+        window.__productsSyncStatus = 'pending';
         localStorage.removeItem(STORAGE_PRODUCTS_KEY);
         localStorage.removeItem('shopProducts');
         localStorage.removeItem('cachedProducts');
