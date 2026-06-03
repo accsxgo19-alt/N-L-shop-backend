@@ -2025,17 +2025,19 @@ function createProductCard(product) {
     const salesInfo = sold > 0 ? `<div class="product-meta">Đã bán ${sold}</div>` : '';
 
     card.innerHTML = `
-        <div class="product-image">${renderProductImage(product.image)}</div>
-        <div class="product-info">
-            <div class="product-name">${product.name}</div>
-            <div class="product-category">${product.category}</div>
+        <div class="product-image-box">${renderProductImage(product.image)}</div>
+
+        <div class="product-card-body">
+            <h3 class="product-name">${product.name}</h3>
+            <p class="product-category">${product.category}</p>
             ${ratingInfo}
             ${salesInfo}
             <div class="product-price">${product.price.toLocaleString()}đ</div>
-            <div class="product-actions">
-                <button class="btn btn-secondary" onclick="viewProduct('${product.id}')">Xem chi tiết</button>
-                <button class="btn btn-primary" onclick="quickAdd('${product.id}')">Thêm vào giỏ</button>
-            </div>
+        </div>
+
+        <div class="product-actions">
+            <button class="btn btn-secondary" onclick="viewProduct('${product.id}')">Xem chi tiết</button>
+            <button class="btn btn-primary" onclick="quickAdd('${product.id}')">Thêm vào giỏ</button>
         </div>
     `;
 

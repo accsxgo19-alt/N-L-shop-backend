@@ -4487,6 +4487,149 @@ body.admin-page .container {
   }
 }
 
+/* ===== ONE FIXED PRODUCT CARD FRAME FOR ALL PRODUCTS ===== */
+.products-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 280px)) !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  gap: 32px !important;
+}
+
+.products-grid .product-card {
+  width: 280px !important;
+  height: 540px !important;
+  min-height: 540px !important;
+  max-height: 540px !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-rows: 240px 1fr 52px !important;
+  gap: 16px !important;
+  overflow: hidden !important;
+}
+
+.product-card .product-image-box,
+.product-card .product-image,
+.product-card .product-media,
+.product-card .product-thumb {
+  width: 100% !important;
+  height: 240px !important;
+  min-height: 240px !important;
+  max-height: 240px !important;
+  overflow: hidden !important;
+  border-radius: 20px !important;
+}
+
+.product-card .product-image-box img,
+.product-card .product-image img,
+.product-card .product-media img,
+.product-card .product-thumb img,
+.product-card > img {
+  width: 100% !important;
+  height: 240px !important;
+  min-height: 240px !important;
+  max-height: 240px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+  border-radius: 20px !important;
+}
+
+.product-card .product-card-body,
+.product-card .product-info,
+.product-card .product-content,
+.product-card .card-body {
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.product-card .product-name,
+.product-card h3 {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  line-height: 1.25 !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  margin: 0 0 4px !important;
+}
+
+.product-card .product-category {
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  overflow: hidden !important;
+  margin: 0 0 6px !important;
+}
+
+.product-card .product-rating,
+.product-card .product-sold,
+.product-card .product-price {
+  flex: 0 0 auto !important;
+}
+
+.product-card .product-actions,
+.product-card .card-actions,
+.product-card .actions {
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin: 0 !important;
+}
+
+.product-card .product-actions .btn,
+.product-card .product-actions button,
+.product-card .card-actions .btn,
+.product-card .actions .btn {
+  width: 100% !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 22px !important;
+  }
+
+  .products-grid .product-card {
+    width: 100% !important;
+    height: 520px !important;
+    min-height: 520px !important;
+    max-height: 520px !important;
+    grid-template-rows: 230px 1fr 52px !important;
+  }
+
+  .product-card .product-image-box,
+  .product-card .product-image,
+  .product-card .product-media,
+  .product-card .product-thumb,
+  .product-card .product-image-box img,
+  .product-card .product-image img,
+  .product-card .product-media img,
+  .product-card .product-thumb img,
+  .product-card > img {
+    height: 230px !important;
+    min-height: 230px !important;
+    max-height: 230px !important;
+  }
+}
+
 /* ===== Admin page layout enhancements ===== */
 .admin-page-shell {
   width: min(100% - 32px, 1480px);
