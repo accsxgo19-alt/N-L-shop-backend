@@ -438,7 +438,10 @@
 
                     let response;
                     if (idInput.value) {
-                        response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(idInput.value)}`, {
+                        // Resolve to actual MongoDB _id when possible
+                        const resolved = await resolveProductMongoId(idInput.value).catch(() => null);
+                        const targetId = resolved || idInput.value;
+                        response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(targetId)}`, {
                             method: 'PUT',
                             headers,
                             body: JSON.stringify(productPayload),
@@ -456,13 +459,19 @@
                         throw new Error(result.message || 'Không thể lưu sản phẩm lên server.');
                     }
 
+                    // Clear known caches so UI always reloads from server
+                    localStorage.removeItem('products');
+                    localStorage.removeItem('shopProducts');
+                    localStorage.removeItem('cachedProducts');
+
                     await syncProductsFromServer();
                     renderProductTable();
                     loadAdminDashboard();
+                    const wasUpdate = Boolean(idInput.value);
                     document.getElementById('productForm').reset();
                     idInput.value = '';
                     updateProductPreview();
-                    message.textContent = idInput.value ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
+                    message.textContent = wasUpdate ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
                     setTimeout(() => message.textContent = '', 3000);
                     return;
                 } catch (err) {

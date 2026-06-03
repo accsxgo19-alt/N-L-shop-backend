@@ -1705,7 +1705,10 @@ async function deleteProductFromServer(productId) {
             throw new Error(result.message || 'Xóa sản phẩm thất bại.');
         }
 
+        // Clear known caches so UI always reloads from server
         localStorage.removeItem(STORAGE_PRODUCTS_KEY);
+        localStorage.removeItem('shopProducts');
+        localStorage.removeItem('cachedProducts');
         await syncProductsFromServer();
 
         return true;
@@ -1777,7 +1780,10 @@ async function saveProductEdit(productId) {
             throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
         }
 
+        // Clear known caches so UI always reloads from server
         localStorage.removeItem(STORAGE_PRODUCTS_KEY);
+        localStorage.removeItem('shopProducts');
+        localStorage.removeItem('cachedProducts');
         await syncProductsFromServer();
 
         alert('Cập nhật sản phẩm thành công.');
