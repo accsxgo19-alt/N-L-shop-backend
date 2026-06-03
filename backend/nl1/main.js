@@ -2016,16 +2016,18 @@ function loadProducts(searchTerm = '', category = '') {
 
 function createProductCard(product) {
     const card = document.createElement('div');
-    card.className = 'product-card';
+    card.className = 'product-card uniform-product-card';
 
     const rating = Number(product.rating) || 0;
     const sold = Number(product.sold) || 0;
     const stars = rating > 0 ? '⭐'.repeat(Math.floor(rating)) + (rating % 1 ? '½' : '') : '';
     const ratingInfo = rating > 0 ? `<div class="product-rating">${stars} ${rating}</div>` : '';
-    const salesInfo = sold > 0 ? `<div class="product-meta">Đã bán ${sold}</div>` : '';
+    const salesInfo = sold > 0 ? `<div class="product-sold">Đã bán ${sold}</div>` : '';
 
     card.innerHTML = `
-        <div class="product-image-box">${renderProductImage(product.image)}</div>
+        <div class="product-image-box">
+            <div class="product-card-img">${renderProductImage(product.image)}</div>
+        </div>
 
         <div class="product-card-body">
             <h3 class="product-name">${product.name}</h3>
