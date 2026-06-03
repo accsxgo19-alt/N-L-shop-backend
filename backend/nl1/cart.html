@@ -6,13 +6,13 @@
     <title>Giỏ hàng - N&L Shop</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="cart-page">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
                 <div class="navbar-brand">
                 <a href="index.html" class="brand-link" aria-label="Về trang chủ">
-                    <h1>👗 N&L Shop</h1>
+                    <h1>🛍️ N&L Shop</h1>
                 </a>
             </div>
             <ul class="navbar-menu">
@@ -37,75 +37,94 @@
     </nav>
 
     <!-- Cart Content -->
-    <div class="container">
-        <h2>Giỏ Hàng</h2>
-        
-        <div id="cartEmpty" class="empty-message">
-            <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
-        </div>
+    <main class="page-shell cart-page-shell">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-label">Giỏ hàng</div>
+                <h2>Kiểm tra lại đơn hàng của bạn</h2>
+                <p>Chỉnh lại số lượng, áp dụng mã giảm giá và đi tới thanh toán trong một giao diện chuyên nghiệp.</p>
+            </div>
 
-        <div id="cartContent" style="display:none;">
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Giá</th>
-                        <th>Số lượng</th>
-                        <th>Thành tiền</th>
-                        <th>Xóa</th>
-                    </tr>
-                </thead>
-                <tbody id="cartItems">
-                    <!-- Cart items will be loaded here -->
-                </tbody>
-            </table>
-
-            <div class="cart-summary vip-summary">
-                <div class="vip-summary-header">
-                    <h3>Tóm tắt giỏ hàng</h3>
-                    <span class="vip-badge">Ưu đãi</span>
+            <div class="page-card cart-card">
+                <div id="cartEmpty" class="empty-message">
+                    <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
                 </div>
-                <div class="discount-code">
-                    <label for="cartDiscountCode">Mã giảm giá / ưu đãi shop:</label>
-                    <div class="discount-code-row">
-                        <input type="text" id="cartDiscountCode" placeholder="Nhập mã giảm giá">
-                        <button type="button" class="btn btn-secondary" onclick="applyCartDiscountCode()">Áp dụng</button>
+
+                <div id="cartContent" style="display:none;">
+                    <div class="cart-grid">
+                        <div class="cart-table-panel">
+                            <table class="cart-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Giá</th>
+                                        <th>Số lượng</th>
+                                        <th>Thành tiền</th>
+                                        <th>Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cartItems">
+                                    <!-- Cart items will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <aside class="cart-summary-panel">
+                            <div class="cart-summary vip-summary">
+                                <div class="vip-summary-header">
+                                    <h3>Tóm tắt giỏ hàng</h3>
+                                    <span class="vip-badge">Ưu đãi</span>
+                                </div>
+                                <div class="cart-summary-meta">Phí ship ưu đãi và tổng kết nhanh để bạn biết ngay số tiền phải thanh toán.</div>
+                                <div class="discount-code">
+                                    <label for="cartDiscountCode">Mã giảm giá / ưu đãi shop:</label>
+                                    <div class="discount-code-row">
+                                        <input type="text" id="cartDiscountCode" placeholder="Nhập mã giảm giá">
+                                        <button type="button" class="btn btn-secondary" onclick="applyCartDiscountCode()">Áp dụng</button>
+                                    </div>
+                                    <div id="cartDiscountMessage" class="discount-message"></div>
+                                </div>
+                                <div class="summary-pill-row">
+                                    <span class="pill">Miễn phí ship từ 500k</span>
+                                    <span class="pill">Thanh toán an toàn</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tổng sản phẩm:</span>
+                                    <span id="totalProducts">0</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tổng tiền hàng:</span>
+                                    <span id="subtotal">0đ</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Phí vận chuyển:</span>
+                                    <span id="shipping">0đ</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Thuế (10%):</span>
+                                    <span id="tax">0đ</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Giảm giá:</span>
+                                    <span id="discountValue">- 0đ</span>
+                                </div>
+                                <hr>
+                                <div class="summary-row total">
+                                    <strong>Tổng cộng:</strong>
+                                    <strong id="total">0đ</strong>
+                                </div>
+                            </div>
+
+                            <div class="cart-actions">
+                                <a href="index.html" class="btn btn-secondary">Tiếp tục mua sắm</a>
+                                <a href="checkout.html" class="btn btn-primary" id="checkoutBtn">Thanh toán</a>
+                            </div>
+                        </aside>
                     </div>
-                    <div id="cartDiscountMessage" class="discount-message"></div>
                 </div>
-                <div class="summary-row">
-                    <span>Tổng sản phẩm:</span>
-                    <span id="totalProducts">0</span>
-                </div>
-                <div class="summary-row">
-                    <span>Tổng tiền hàng:</span>
-                    <span id="subtotal">0đ</span>
-                </div>
-                <div class="summary-row">
-                    <span>Phí vận chuyển:</span>
-                    <span id="shipping">0đ</span>
-                </div>
-                <div class="summary-row">
-                    <span>Thuế (10%):</span>
-                    <span id="tax">0đ</span>
-                </div>
-                <div class="summary-row">
-                    <span>Giảm giá:</span>
-                    <span id="discountValue">- 0đ</span>
-                </div>
-                <hr>
-                <div class="summary-row total">
-                    <strong>Tổng cộng:</strong>
-                    <strong id="total">0đ</strong>
-                </div>
-            </div>
-
-            <div class="cart-actions">
-                <a href="index.html" class="btn btn-secondary">Tiếp tục mua sắm</a>
-                <a href="checkout.html" class="btn btn-primary" id="checkoutBtn">Thanh toán</a>
             </div>
         </div>
-    </div>
+    </main>
 
     <footer class="footer">
         <div class="container">

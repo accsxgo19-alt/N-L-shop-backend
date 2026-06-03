@@ -123,6 +123,7 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
 
         if (item) {
           product.stock -= item.quantity;
+          product.sold = (product.sold || 0) + item.quantity;
           return product.save();
         }
 

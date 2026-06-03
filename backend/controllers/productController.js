@@ -2,7 +2,7 @@ const Product = require('../models/Product');
 
 const createProduct = async (req, res) => {
   try {
-    const { name, image, price, category, description, stock } = req.body;
+    const { name, image, price, category, description, stock, rating, sold } = req.body;
 
     if (!name || price == null || !category || !description || stock == null) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin sản phẩm.' });
@@ -15,6 +15,8 @@ const createProduct = async (req, res) => {
       category,
       description,
       stock,
+      rating: rating != null ? Number(rating) : 0,
+      sold: sold != null ? Number(sold) : 0,
     });
 
     res.status(201).json({ message: 'Tạo sản phẩm thành công.', product });
@@ -49,7 +51,7 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const { name, image, price, category, description, stock } = req.body;
+    const { name, image, price, category, description, stock, rating, sold } = req.body;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -62,6 +64,8 @@ const updateProduct = async (req, res) => {
     product.category = category ?? product.category;
     product.description = description ?? product.description;
     product.stock = stock ?? product.stock;
+    product.rating = rating != null ? Number(rating) : product.rating;
+    product.sold = sold != null ? Number(sold) : product.sold;
 
     await product.save();
     res.json({ message: 'Cập nhật sản phẩm thành công.', product });

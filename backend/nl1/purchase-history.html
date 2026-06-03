@@ -10,9 +10,9 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-                <div class="navbar-brand">
+            <div class="navbar-brand">
                 <a href="index.html" class="brand-link" aria-label="Về trang chủ">
-                    <h1>👗 N&L Shop</h1>
+                    <h1>🛍️ N&L Shop</h1>
                 </a>
             </div>
             <ul class="navbar-menu">
@@ -36,20 +36,25 @@
         </div>
     </nav>
 
-    <div class="container purchase-history-container">
-        <div class="page-header">
-            <div class="page-label">Lịch sử mua hàng</div>
-            <h2>Các mặt hàng bạn đã mua</h2>
-            <p>Xem lại danh sách sản phẩm, tổng số lượng, chi phí đã tiêu và ngày mua gần nhất.</p>
+    <main class="page-shell history-page-shell">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-label">Lịch sử mua hàng</div>
+                <h2>Các mặt hàng bạn đã mua</h2>
+                <p>Xem lại danh sách sản phẩm, tổng số lượng, chi phí đã tiêu và ngày mua gần nhất.</p>
+            </div>
+            <div class="page-card history-card-wrapper">
+                <div id="historyContainer"></div>
+            </div>
         </div>
-
-        <div id="historyContainer"></div>
-    </div>
+    </main>
 
     <footer class="footer">
-        <div class="container">
+        <div class="nav-container">
+            <div class="container">
             <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
             <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+            </div>
         </div>
     </footer>
 
@@ -65,6 +70,16 @@
             await loadPurchaseHistory();
         });
 
+        async function buyAgain(productId) {
+            if (!productId) return;
+            await addToCart(productId, 1);
+            updateCartCount();
+            if (typeof displayCart === 'function') {
+                displayCart();
+            }
+            alert('Đã thêm sản phẩm này vào giỏ hàng.');
+        }
+
         async function loadPurchaseHistory() {
             const historyContainer = document.getElementById('historyContainer');
             const history = await getUserPurchaseHistory();
@@ -79,6 +94,7 @@
             }
 
             historyContainer.innerHTML = history.map(item => {
+                const productId = item.product ? (item.product.id || item.product._id || item.product.productId || item.productId) : '';
                 return `
                     <div class="history-card">
                         <div class="history-header">
@@ -108,6 +124,7 @@
                                 </div>
                             `).join('')}
                         </div>
+                        ${productId ? `<button class="buy-again-btn" onclick="buyAgain(${JSON.stringify(productId)})">Mua lại</button>` : ''}
                     </div>
                 `;
             }).join('');

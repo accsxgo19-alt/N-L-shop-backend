@@ -10,9 +10,9 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-                <div class="navbar-brand">
+            <div class="navbar-brand">
                 <a href="index.html" class="brand-link" aria-label="Về trang chủ">
-                    <h1>👗 N&L Shop</h1>
+                    <h1>🛍️ N&L Shop</h1>
                 </a>
             </div>
             <ul class="navbar-menu">
@@ -37,22 +37,31 @@
     </nav>
 
     <!-- Orders Content -->
-    <div class="container orders-container">
-        <h2>Đơn Hàng Của Tôi</h2>
-        
-        <div id="noOrders" class="empty-message">
-            <p>Bạn chưa có đơn hàng nào. <a href="index.html">Bắt đầu mua sắm</a></p>
-        </div>
+    <main class="page-shell orders-page-shell">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-label">Đơn hàng của tôi</div>
+                <h2>Quản lý và theo dõi đơn hàng</h2>
+                <p>Xem trạng thái giao hàng, chi tiết sản phẩm và lịch sử đơn hàng của bạn trong một giao diện gọn gàng, hiện đại.</p>
+            </div>
+            <div class="page-card orders-card">
+                <div id="noOrders" class="empty-message">
+                    <p>Bạn chưa có đơn hàng nào. <a href="index.html">Bắt đầu mua sắm</a></p>
+                </div>
 
-        <div id="ordersContainer" style="display:none;">
-            <div id="ordersList"></div>
+                <div id="ordersContainer" style="display:none;">
+                    <div id="ordersList"></div>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 
     <footer class="footer">
-        <div class="container">
+        <div class="nav-container">
+            <div class="container">
             <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
             <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+            </div>
         </div>
     </footer>
 

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body class="checkout-page">
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
@@ -26,17 +26,26 @@
     </nav>
 
     <!-- Checkout Form -->
-    <div class="container">
-        <div class="checkout-container">
-            <div class="checkout-form">
-                <h2>Thanh Toán</h2>
+    <main class="page-shell checkout-page-shell">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-label">Thanh toán</div>
+                <h2>Hoàn tất đơn hàng của bạn</h2>
+                <p>Kiểm tra lại thông tin giao hàng và phương thức thanh toán rồi đặt hàng ngay.</p>
+            </div>
+            <div class="checkout-container">
+                <div class="checkout-form">
+                    <h2>Chi tiết khách hàng</h2>
+                    <p class="checkout-intro">Xác nhận thông tin, chọn phương thức thanh toán và hoàn tất đơn hàng trong một trải nghiệm thanh lịch.</p>
 
-                <div id="checkoutEmpty" class="empty-message">
-                    <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
-                </div>
+                    <div id="checkoutEmpty" class="empty-message">
+                        <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
+                    </div>
 
                 <form id="checkoutForm" style="display:none;">
-                    <h3>Thông tin khách hàng</h3>
+                    <div class="checkout-section">
+                        <h3>Thông tin khách hàng</h3>
+                    </div>
                     <div class="form-group">
                         <label for="fullname">Họ và tên:</label>
                         <input type="text" id="fullname" name="fullname" required>
@@ -84,23 +93,23 @@
                     </div>
 
                     <h3>Phương thức thanh toán</h3>
-                    <div class="form-group">
+                    <div class="form-group payment-option">
                         <label>
                             <input type="radio" name="paymentMethod" value="cash" checked>
-                            Thanh toán khi nhận hàng (COD)
+                            <span>Thanh toán khi nhận hàng (COD)</span>
                         </label>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group payment-option">
                         <label>
                             <input type="radio" name="paymentMethod" value="banking">
-                            Chuyển khoản ngân hàng
+                            <span>Chuyển khoản ngân hàng</span>
                         </label>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group checkbox-option">
                         <label>
                             <input type="checkbox" id="agreeTerms" required>
-                            Tôi đồng ý với điều khoản mua hàng
+                            <span>Tôi đồng ý với điều khoản mua hàng</span>
                         </label>
                     </div>
 
@@ -109,46 +118,67 @@
                 </form>
             </div>
 
-            <div class="checkout-summary" id="checkoutSummary" style="display:none;">
-                <h3>Tóm tắt đơn hàng</h3>
-                <div class="discount-code">
-                    <label for="discountCode">Mã giảm giá / Ưu đãi:</label>
-                    <div class="discount-code-row">
-                        <input type="text" id="discountCode" placeholder="Nhập mã giảm giá">
-                        <button type="button" class="btn btn-secondary" onclick="applyDiscountCode()">Áp dụng</button>
+            <aside class="checkout-summary" id="checkoutSummary" style="display:none;">
+                <div class="checkout-summary-header">
+                    <div>
+                        <p class="summary-tag">Đơn hàng</p>
+                        <h3>Tóm tắt đơn hàng</h3>
                     </div>
-                    <div id="discountMessage" class="discount-message"></div>
+                    <span class="checkout-badge">An toàn</span>
                 </div>
-                <div id="checkoutItems"></div>
-                <hr>
-                <div class="summary-row">
-                    <span>Số sản phẩm:</span>
-                    <span id="checkoutItemCount">0</span>
+                <p class="summary-note">Đã bao gồm VAT và phí vận chuyển. Kiểm tra lại chi tiết trước khi hoàn tất thanh toán.</p>
+                <div class="checkout-summary-card">
+                    <div class="summary-hero">
+                        <div>
+                            <p class="summary-hero-label">Tạm tính</p>
+                            <strong class="summary-hero-value" id="checkoutSubtotalHero">0đ</strong>
+                        </div>
+                        <span class="summary-chip" id="checkoutItemCountChip">0 sản phẩm</span>
+                    </div>
+                    <div class="discount-code">
+                        <label for="discountCode">Mã giảm giá / Ưu đãi</label>
+                        <div class="discount-code-row">
+                            <input type="text" id="discountCode" placeholder="Nhập mã giảm giá">
+                            <button type="button" class="btn btn-secondary" onclick="applyDiscountCode()">Áp dụng</button>
+                        </div>
+                        <div id="discountMessage" class="discount-message"></div>
+                    </div>
+                    <div class="checkout-order-preview" id="checkoutItems"></div>
+                    <div class="summary-savings">
+                        <span>Tiết kiệm</span>
+                        <strong id="checkoutSavings">0đ</strong>
+                    </div>
                 </div>
-                <div class="summary-row">
-                    <span>Tổng tiền hàng:</span>
-                    <span id="checkoutSubtotal">0đ</span>
+                <div class="summary-details">
+                    <div class="summary-row">
+                        <span>Số sản phẩm</span>
+                        <span id="checkoutItemCount">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tổng tiền hàng</span>
+                        <span id="checkoutSubtotal">0đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Phí vận chuyển</span>
+                        <span id="checkoutShipping">0đ</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Thuế (10%)</span>
+                        <span id="checkoutTax">0đ</span>
+                    </div>
+                    <div class="summary-row discount-row">
+                        <span>Giảm giá</span>
+                        <span id="checkoutDiscount">0đ</span>
+                    </div>
+                    <div class="summary-row total">
+                        <strong>Tổng cộng</strong>
+                        <strong id="checkoutTotal">0đ</strong>
+                    </div>
                 </div>
-                <div class="summary-row">
-                    <span>Phí vận chuyển:</span>
-                    <span id="checkoutShipping">0đ</span>
-                </div>
-                <div class="summary-row">
-                    <span>Thuế (10%):</span>
-                    <span id="checkoutTax">0đ</span>
-                </div>
-                <div class="summary-row">
-                    <span>Giảm giá:</span>
-                    <span id="checkoutDiscount">0đ</span>
-                </div>
-                <hr>
-                <div class="summary-row total">
-                    <strong>Tổng cộng:</strong>
-                    <strong id="checkoutTotal">0đ</strong>
-                </div>
-            </div>
+            </aside>
         </div>
     </div>
+</main>
 
     <footer class="footer">
         <div class="container">
@@ -382,10 +412,13 @@
             const total = totalBeforeDiscount - discount;
 
             document.getElementById('checkoutItemCount').textContent = itemCount;
+            document.getElementById('checkoutItemCountChip').textContent = `${itemCount} sản phẩm`;
             document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString() + 'đ';
+            document.getElementById('checkoutSubtotalHero').textContent = Math.floor(total).toLocaleString() + 'đ';
             document.getElementById('checkoutShipping').textContent = shipping.toLocaleString() + 'đ';
             document.getElementById('checkoutTax').textContent = Math.floor(tax).toLocaleString() + 'đ';
             document.getElementById('checkoutDiscount').textContent = `- ${Math.floor(discount).toLocaleString()}đ`;
+            document.getElementById('checkoutSavings').textContent = `- ${Math.floor(discount).toLocaleString()}đ`;
             document.getElementById('checkoutTotal').textContent = Math.floor(total).toLocaleString() + 'đ';
         }
 

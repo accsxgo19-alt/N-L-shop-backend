@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="admin-page">
+    <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-                <div class="navbar-brand">
+            <div class="navbar-brand">
                 <a href="index.html" class="brand-link" aria-label="Về trang chủ">
-                    <h1>👗 N&L Shop</h1>
+                    <h1>🛍️ N&L Shop</h1>
                 </a>
             </div>
             <ul class="navbar-menu">
@@ -35,8 +36,9 @@
         </div>
     </nav>
 
-        <main class="admin-shell admin-page-shell">
-            <div class="container">
+    <main class="page-shell admin-shell admin-page-shell admin-main">
+            <div class="page-container">
+                <div class="container">
                 <section class="admin-hero">
                     <div class="page-header">
                         <div class="page-label">Khu vực quản lý</div>
@@ -248,13 +250,16 @@
                         <button class="btn btn-primary" id="sendChatBtn">Gửi</button>
                     </div>
                 </section>
+                </div>
             </div>
         </main>
 
     <footer class="footer">
-        <div class="container">
+        <div class="nav-container">
+            <div class="container">
             <p>&copy; 2026 N&L Shop. Tất cả quyền được bảo lưu.</p>
             <p>Liên hệ: nlshop213@gmail.com | Điện thoại: 0793244405</p>
+            </div>
         </div>
     </footer>
 
@@ -420,6 +425,8 @@
                         category,
                         description,
                         stock: Number(document.getElementById('productStock')?.value) || 10,
+                        rating,
+                        sold,
                     };
 
                     const headers = {
