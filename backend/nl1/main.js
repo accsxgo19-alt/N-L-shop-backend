@@ -310,6 +310,13 @@ function getAuthHeaders() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function handleAuthFailure() {
+    localStorage.removeItem('currentUser');
+    alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại admin.');
+    window.location.href = 'login.html';
+    return false;
+}
+
 function isLoggedIn() {
     return getCurrentUser() !== null;
 }
@@ -1699,9 +1706,8 @@ async function deleteProductFromServer(productId) {
         return false;
     }
 
-    if (!isLoggedIn() || !getCurrentUserToken()) {
-        alert('Vui lòng đăng nhập admin để xóa sản phẩm.');
-        return false;
+    if (!isAdmin() || !getCurrentUserToken()) {
+        return handleAuthFailure();
     }
 
     try {
@@ -1713,11 +1719,14 @@ async function deleteProductFromServer(productId) {
 
         const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(actualProductId)}`, {
             method: 'DELETE',
-            headers: Object.assign({}, getAuthHeaders()),
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
         });
 
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                return handleAuthFailure();
+            }
             throw new Error(result.message || 'Xóa sản phẩm thất bại.');
         }
 
@@ -1766,9 +1775,14 @@ async function saveProductEdit(productId) {
         return;
     }
 
-    if (!isLoggedIn() || !getCurrentUserToken()) {
-        alert('Vui lòng đăng nhập admin để lưu sản phẩm.');
-        return;
+    const token = getCurrentUserToken();
+    if (!isAdmin() || !token) {
+        return handleAuthFailure();
+    }
+
+    // Basic check: JWT tokens contain at least two dots.
+    if (typeof token === 'string' && token.split('.').length < 3) {
+        return handleAuthFailure();
     }
 
     try {
@@ -1795,6 +1809,9 @@ async function saveProductEdit(productId) {
 
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                return handleAuthFailure();
+            }
             throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
         }
 

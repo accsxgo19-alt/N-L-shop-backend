@@ -24,6 +24,11 @@ const { validateCheckout } = require('./middleware/validator');
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET is not defined. Please set JWT_SECRET in environment variables.');
+  process.exit(1);
+}
+
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));

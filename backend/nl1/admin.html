@@ -445,7 +445,7 @@
             }
 
             if (!isAdmin() || !getCurrentUserToken()) {
-                message.textContent = 'Vui lòng đăng nhập admin để lưu sản phẩm.';
+                handleAuthFailure();
                 return;
             }
 
@@ -494,6 +494,10 @@
                 }
 
                 if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        handleAuthFailure();
+                        return;
+                    }
                     const result = await response.json().catch(() => ({}));
                     const serverMessage = result && result.message ? result.message : `Lỗi server: ${response.status}`;
                     message.textContent = serverMessage;
@@ -524,7 +528,7 @@
         async function deleteProduct(productId) {
             if (!productId) return;
             if (!isAdmin() || !getCurrentUserToken()) {
-                alert('Chỉ admin mới được xóa sản phẩm.');
+                handleAuthFailure();
                 return;
             }
 
