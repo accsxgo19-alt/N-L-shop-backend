@@ -1345,13 +1345,16 @@ async function syncProductsFromServer() {
         const res = await fetch(`${API_BASE}/api/products`);
         if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data) && data.length) {
+            if (Array.isArray(data)) {
                 const normalized = data.map(product => ({
                     ...product,
-                    id: String(product.id || product._id || product._id || product.id || ''),
+                    id: String(product.id || product._id || ''),
                 }));
-                const productsCache = window.__productsCache || [];
+                // Always replace cache with server response (may be empty [])
                 window.__productsCache = normalized;
+            } else {
+                // If server returned unexpected payload, clear cache to avoid stale local data
+                window.__productsCache = [];
             }
         }
     } catch (err) {

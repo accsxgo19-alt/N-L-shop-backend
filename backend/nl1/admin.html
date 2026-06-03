@@ -476,7 +476,10 @@
                     return;
                 } catch (err) {
                     console.warn(err);
-                    message.textContent = 'Không thể lưu sản phẩm lên server, đang chuyển về chế độ lưu cục bộ.';
+                    message.textContent = 'Không thể lưu sản phẩm lên server: ' + (err.message || 'Lỗi');
+                    // Do NOT silently add to localStorage when server save fails.
+                    // Admin should see the error and retry.
+                    return;
                 }
             }
 
