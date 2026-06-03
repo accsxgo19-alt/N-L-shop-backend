@@ -4281,6 +4281,102 @@ body.admin-page .container {
   flex: 0 0 122px;
 }
 
+
+.products-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 24px !important;
+  align-items: stretch !important;
+}
+
+.products-grid > .product-card {
+  height: 100% !important;
+  min-height: 560px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.product-card {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.product-card img,
+.product-card .product-image img {
+  width: 100% !important;
+  height: 260px !important;
+  min-height: 260px !important;
+  max-height: 260px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.product-card .product-image,
+.product-card .product-img,
+.product-card .product-thumb,
+.product-card .product-media {
+  width: 100% !important;
+  height: 260px !important;
+  min-height: 260px !important;
+  max-height: 260px !important;
+  overflow: hidden !important;
+  border-radius: 22px !important;
+}
+
+.product-card .product-content,
+.product-card .product-info,
+.product-card .card-body {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+.product-card h3,
+.product-card .product-name {
+  min-height: 42px !important;
+  max-height: 42px !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.product-card .product-actions,
+.product-card .card-actions,
+.product-card .actions {
+  margin-top: auto !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.product-card .product-actions .btn,
+.product-card .card-actions .btn,
+.product-card .actions .btn {
+  flex: 1 !important;
+  min-height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 768px) {
+  .products-grid > .product-card {
+    min-height: 530px !important;
+  }
+
+  .product-card img,
+  .product-card .product-image,
+  .product-card .product-img,
+  .product-card .product-thumb,
+  .product-card .product-media {
+    height: 240px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
+  }
+}
+
 /* ===== Admin page layout enhancements ===== */
 .admin-page-shell {
   width: min(100% - 32px, 1480px);
