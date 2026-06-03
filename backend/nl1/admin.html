@@ -265,7 +265,7 @@
 
     <script src="main.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             initializePage();
             if (!isAdmin()) {
                 alert('Chỉ quản trị viên mới được truy cập khu vực này.');
@@ -273,6 +273,7 @@
                 return;
             }
 
+            await loadAdminOrders();
             loadAdminDashboard();
             renderProductTable();
             renderUserTable();
@@ -326,7 +327,8 @@
             });
 
             // realtime admin events
-            document.addEventListener('admin:newOrder', function(ev) {
+            document.addEventListener('admin:newOrder', async function(ev) {
+                await loadAdminOrders();
                 renderPendingOrders();
                 renderOrderTable();
                 const order = ev.detail && ev.detail.order;
@@ -641,6 +643,48 @@
                 </div>
                 ${rows}
             ` : '<div class="empty-message">Chưa có tài khoản.</div>';
+        }
+
+        async function loadAdminOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/orders`, {
+                    headers: getAuthHeaders(),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Không thể tải đơn hàng admin từ server.');
+                }
+
+                const orders = await response.json();
+                const mappedOrders = (orders || []).map(mapAdminOrderForLocal);
+                saveAllOrders(mappedOrders);
+                return mappedOrders;
+            } catch (error) {
+                console.warn('Không tải được đơn hàng admin từ server:', error);
+                return getAllOrders();
+            }
+        }
+
+        function mapAdminOrderForLocal(order) {
+            return {
+                id: String(order._id || order.id || ''),
+                date: order.createdAt || order.date || new Date().toISOString(),
+                userEmail: order.customerEmail || order.email || (order.user && order.user.email) || '',
+                fullname: order.customerName || order.fullname || '',
+                phone: order.customerPhone || order.phone || '',
+                shippingAddress: order.shippingAddress || order.address || '',
+                paymentMethod: order.paymentMethod || 'cash',
+                discountCode: order.discountCode || '',
+                discountAmount: Number(order.discountAmount) || 0,
+                items: (order.items || []).map(item => ({
+                    productId: String(item.product?._id || item.product || item.productId || ''),
+                    quantity: Number(item.quantity) || 1,
+                    name: item.name || (item.product && item.product.name) || '',
+                    price: Number(item.price) || (item.product && Number(item.product.price)) || 0,
+                })),
+                total: Number(order.totalAmount || order.total) || 0,
+                status: order.status || 'pending',
+            };
         }
 
         function renderPendingOrders() {

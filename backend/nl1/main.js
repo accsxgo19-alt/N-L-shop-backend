@@ -1401,7 +1401,7 @@ function setBuyNow(productId, quantity = 1) {
     window.location.href = 'checkout.html';
 }
 
-function loadProductDetail() {
+async function loadProductDetail() {
     const productId = getQueryParam('id')?.trim();
     const editMode = getQueryParam('edit') === '1';
     const container = document.getElementById('productDetailContainer');
@@ -1412,7 +1412,21 @@ function loadProductDetail() {
         return;
     }
 
-    const product = getProductById(productId);
+    let product = await fetchProductFromServer(productId);
+
+    if (!product) {
+        product = getProductById(productId);
+    } else {
+        const products = getAllProducts();
+        const index = products.findIndex(p => String(p.id) === String(product.id));
+        if (index !== -1) {
+            products[index] = product;
+        } else {
+            products.push(product);
+        }
+        saveProducts(products);
+    }
+
     const rating = Number(product?.rating) || 0;
     const sold = Number(product?.sold) || 0;
     const detailMeta = rating
@@ -1460,6 +1474,26 @@ function loadProductDetail() {
                         <div class="form-row">
                             <label for="editProductPrice">Giá sản phẩm (VND)</label>
                             <input id="editProductPrice" type="number" min="0" value="${product.price}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="editProductCategory">Danh mục</label>
+                            <input id="editProductCategory" type="text" value="${escapeHtml(product.category)}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="editProductDescription">Mô tả</label>
+                            <textarea id="editProductDescription" rows="4" required>${escapeHtml(product.description)}</textarea>
+                        </div>
+                        <div class="form-row">
+                            <label for="editProductStock">Số lượng tồn kho</label>
+                            <input id="editProductStock" type="number" min="0" value="${Number(product.stock) || 0}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="editProductRating">Đánh giá</label>
+                            <input id="editProductRating" type="number" step="0.1" min="0" max="5" value="${Number(product.rating) || 0}" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="editProductSold">Đã bán</label>
+                            <input id="editProductSold" type="number" min="0" value="${Number(product.sold) || 0}" required>
                         </div>
                         <div class="form-row">
                             <label for="editProductImageInput">Ảnh sản phẩm (URL hoặc emoji)</label>
@@ -1562,41 +1596,105 @@ function setupProductEditForm() {
     }
 }
 
-function saveProductEdit(productId) {
+async function fetchProductFromServer(productId) {
+    if (!productId) return null;
+    try {
+        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`);
+        if (!response.ok) return null;
+        const product = await response.json();
+        return {
+            ...product,
+            id: String(product.id || product._id || ''),
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+async function saveProductEdit(productId) {
     const nameInput = document.getElementById('editProductName');
     const priceInput = document.getElementById('editProductPrice');
+    const categoryInput = document.getElementById('editProductCategory');
+    const descriptionInput = document.getElementById('editProductDescription');
+    const stockInput = document.getElementById('editProductStock');
+    const ratingInput = document.getElementById('editProductRating');
+    const soldInput = document.getElementById('editProductSold');
     const imageInput = document.getElementById('editProductImageInput');
 
-    if (!nameInput || !priceInput || !imageInput) {
+    if (!nameInput || !priceInput || !categoryInput || !descriptionInput || !stockInput || !ratingInput || !soldInput || !imageInput) {
+        alert('Form chỉnh sửa sản phẩm không hợp lệ.');
         return;
     }
 
     const name = nameInput.value.trim();
     const price = Number(priceInput.value);
+    const category = categoryInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const stock = Number(stockInput.value);
+    const rating = Number(ratingInput.value);
+    const sold = Number(soldInput.value);
     const image = imageInput.value.trim();
 
-    if (!name || Number.isNaN(price) || price < 0) {
-        alert('Vui lòng nhập đầy đủ tên và giá sản phẩm hợp lệ.');
+    if (!name || Number.isNaN(price) || price < 0 || !category || !description || Number.isNaN(stock) || stock < 0 || Number.isNaN(rating) || rating < 0 || rating > 5 || Number.isNaN(sold) || sold < 0) {
+        alert('Vui lòng nhập đầy đủ thông tin sản phẩm hợp lệ.');
         return;
     }
 
-    const products = getAllProducts();
-    const index = products.findIndex(product => product.id === productId);
-    if (index === -1) {
-        alert('Không tìm thấy sản phẩm để lưu.');
+    if (!isLoggedIn() || !getCurrentUserToken()) {
+        alert('Vui lòng đăng nhập admin để lưu sản phẩm.');
         return;
     }
 
-    products[index] = {
-        ...products[index],
-        name,
-        price,
-        image: image || products[index].image,
-    };
+    try {
+        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(productId)}`, {
+            method: 'PUT',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
+            body: JSON.stringify({
+                name,
+                image: image || undefined,
+                price,
+                category,
+                description,
+                stock,
+                rating,
+                sold,
+            }),
+        });
 
-    saveProducts(products);
-    alert('Đã lưu thay đổi sản phẩm.');
-    window.location.href = 'product.html?id=' + encodeURIComponent(productId);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
+        }
+
+        const updatedProduct = result.product || result;
+        if (updatedProduct) {
+            const products = getAllProducts();
+            const index = products.findIndex(p => String(p.id) === String(productId));
+            const normalized = {
+                ...products[index],
+                ...updatedProduct,
+                id: String(updatedProduct.id || updatedProduct._id || productId),
+            };
+            if (index !== -1) {
+                products[index] = normalized;
+            } else {
+                products.push(normalized);
+            }
+            saveProducts(products);
+        }
+
+        await syncProductsFromServer();
+
+        alert('Cập nhật sản phẩm thành công.');
+        if (isAdmin()) {
+            window.location.href = 'admin.html';
+        } else {
+            window.location.href = 'index.html';
+        }
+    } catch (error) {
+        console.error('Lỗi cập nhật sản phẩm:', error);
+        alert(error.message || 'Không thể cập nhật sản phẩm.');
+    }
 }
 
 function viewProduct(productId) {

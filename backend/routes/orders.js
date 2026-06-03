@@ -13,6 +13,8 @@ router.use(auth);
 
 router.post('/', createOrder);
 router.get('/my', getMyOrders);
+router.get('/my-orders', getMyOrders);
+router.get('/', getMyOrders);
 
 router.put('/:id/status', admin, updateOrderStatus);
 router.put('/:id', admin, updateOrderStatus);
