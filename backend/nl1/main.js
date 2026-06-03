@@ -2024,8 +2024,9 @@ function updateUserDisplay() {
 
     if (isLoggedIn()) {
         const user = getCurrentUser();
-        userDisplay.textContent = user.fullname || user.email;
-        userDisplay.href = 'account.html';
+        const username = user.fullname || (isAdmin() ? 'Admin User' : user.email || 'Người dùng');
+        userDisplay.textContent = username;
+        userDisplay.href = isAdmin() ? 'admin.html' : 'account.html';
         userMenu.classList.add('logged-in');
 
         if (accountLink) accountLink.style.display = 'block';
