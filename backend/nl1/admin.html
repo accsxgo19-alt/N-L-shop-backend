@@ -185,12 +185,12 @@
                                 <div class="preview-body">
                                     <div class="product-category preview-category" id="previewCategory">Danh mục</div>
                                     <h3 class="product-name" id="previewName">Tên sản phẩm</h3>
+                                    <div class="product-price preview-price" id="previewPrice">0đ</div>
                                     <div class="preview-meta">
                                         <span id="previewRating">⭐ 0.0</span>
                                         <span id="previewSold">0 đã bán</span>
                                     </div>
                                     <p class="preview-description" id="previewDescription">Mô tả ngắn gọn sản phẩm sẽ hiển thị tại đây.</p>
-                                    <div class="product-price preview-price" id="previewPrice">0đ</div>
                                 </div>
                             </div>
                         </aside>
@@ -297,6 +297,7 @@
                 if (input) {
                     input.addEventListener('input', updateProductPreview);
                     input.addEventListener('change', updateProductPreview);
+                    input.addEventListener('keyup', updateProductPreview);
                 }
             });
             const imageFileInput = document.getElementById('productImageFile');
@@ -343,8 +344,12 @@
         function updateProductPreview() {
             const name = document.getElementById('productName')?.value.trim() || 'Tên sản phẩm';
             const category = document.getElementById('productCategory')?.value.trim() || 'Danh mục';
-            const rawPrice = document.getElementById('productPrice')?.value;
-            const price = Number(rawPrice !== undefined && rawPrice !== null ? rawPrice : 0);
+            const rawPrice = document.getElementById('productPrice')?.value || '';
+            const cleanedPrice = String(rawPrice).replace(/[^0-9.-]/g, '');
+            let price = parseFloat(cleanedPrice);
+            if (!Number.isFinite(price)) {
+                price = 0;
+            }
             const image = document.getElementById('productImage')?.value.trim() || '🎁';
             const rating = Number(document.getElementById('productRating')?.value) || 4.5;
             const sold = Number(document.getElementById('productSold')?.value) || 0;
@@ -354,8 +359,12 @@
             document.getElementById('previewName').textContent = name;
             document.getElementById('previewCategory').textContent = category;
             if (previewPrice) {
-                previewPrice.textContent = formatCurrency(Number.isFinite(price) ? price : 0);
+                const formattedPrice = formatCurrency(price, rawPrice);
+                previewPrice.textContent = formattedPrice;
                 previewPrice.style.display = 'block';
+                previewPrice.style.visibility = 'visible';
+                previewPrice.style.opacity = '1';
+                previewPrice.classList.remove('hidden');
             }
             document.getElementById('previewRating').textContent = `⭐ ${rating.toFixed(1)}`;
             document.getElementById('previewSold').textContent = `${sold} đã bán`;
@@ -371,8 +380,18 @@
             }
         }
 
-        function formatCurrency(value) {
-            return value.toLocaleString('vi-VN') + 'đ';
+        function formatCurrency(value, fallback) {
+            const parsed = Number(value);
+            if (Number.isFinite(parsed)) {
+                return parsed.toLocaleString('vi-VN') + 'đ';
+            }
+
+            if (typeof fallback === 'string' && fallback.trim() !== '') {
+                const cleanedFallback = fallback.toString().trim().replace(/[đ₫\s]+$/gi, '');
+                return cleanedFallback ? cleanedFallback + 'đ' : '0đ';
+            }
+
+            return '0đ';
         }
 
         function loadAdminDashboard() {
