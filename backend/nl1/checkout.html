@@ -391,20 +391,26 @@
 
             items.forEach(item => {
                 const product = getProductById(item.productId);
-                if (product) {
-                    const itemTotal = product.price * item.quantity;
-                    subtotal += itemTotal;
-                    const div = document.createElement('div');
-                    div.className = 'summary-item';
-                    div.innerHTML = `
-                        <div>${product.name} x${item.quantity}</div>
-                        <div>${itemTotal.toLocaleString()}đ</div>
-                    `;
-                    itemsContainer.appendChild(div);
-                }
+                const productName = product?.name || item.name || `Sản phẩm ${item.productId}`;
+                const productPrice = Number(product?.price ?? item.price ?? 0);
+                const itemTotal = productPrice * (Number(item.quantity) || 1);
+                subtotal += itemTotal;
+
+                const optionDetails = [];
+                if (item.color) optionDetails.push(item.color);
+                if (item.size) optionDetails.push(item.size);
+                const optionText = optionDetails.length ? ` (${optionDetails.join(' • ')})` : '';
+
+                const div = document.createElement('div');
+                div.className = 'summary-item';
+                div.innerHTML = `
+                    <div>${productName}${optionText} x${Number(item.quantity) || 1}</div>
+                    <div>${itemTotal.toLocaleString()}đ</div>
+                `;
+                itemsContainer.appendChild(div);
             });
 
-            const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+            const itemCount = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
             const shipping = subtotal > 500000 ? 0 : 50000;
             const tax = subtotal * 0.1;
             const totalBeforeDiscount = subtotal + shipping + tax;

@@ -1350,7 +1350,7 @@ function getAllProducts() {
     if (window.__productsSyncStatus === 'success') {
         return [];
     }
-    return isIndexPage() ? [] : getStoredProducts();
+    return getStoredProducts();
 }
 
 async function syncProductsFromServer() {
@@ -1430,8 +1430,18 @@ function clearBuyNowItem() {
 }
 
 function setBuyNow(productId, quantity = 1) {
+    const normalizedQuantity = Math.max(1, Number(quantity) || 1);
     const { color, size } = getSelectedProductOptions();
-    const buyNowItem = { productId, quantity, color, size };
+    const product = getProductById(productId) || {};
+    const buyNowItem = {
+        productId: String(productId),
+        quantity: normalizedQuantity,
+        color,
+        size,
+        name: product.name || '',
+        price: Number(product.price || 0),
+        image: product.image || ''
+    };
     saveBuyNowItem(buyNowItem);
 
     if (!isLoggedIn()) {
@@ -1891,8 +1901,10 @@ function requireLoginBeforeAction() {
 initializeProductData();
 syncProductsFromServer();
 // initialize realtime connection and user orders cache if logged in
-initSocket();
-fetchAndStoreUserOrders().catch(() => { });
+if (isLoggedIn()) {
+    initSocket();
+    fetchAndStoreUserOrders().catch(() => { });
+}
 
 function isIndexPage() {
     const path = window.location.pathname || '';
@@ -1907,11 +1919,7 @@ function initializeHomepage() {
     }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeHomepage);
-} else {
-    initializeHomepage();
-}
+
 
 async function addProductDetailToCart() {
     if (!requireLoginBeforeAction()) return;
@@ -2032,9 +2040,8 @@ function updateUserDisplay() {
         if (accountLink) accountLink.style.display = 'block';
         if (ordersLink) ordersLink.style.display = 'block';
         if (historyLink) historyLink.style.display = 'block';
-        if (isAdmin() && document.getElementById('adminLink')) {
-            document.getElementById('adminLink').style.display = 'block';
-        }
+        const adminLink = document.getElementById('adminLink');
+        if (adminLink) adminLink.style.display = isAdmin() ? 'block' : 'none';
         if (logoutBtn) logoutBtn.style.display = 'block';
         if (loginLink) loginLink.style.display = 'none';
         if (registerLink) registerLink.style.display = 'none';
@@ -2045,9 +2052,8 @@ function updateUserDisplay() {
         if (accountLink) accountLink.style.display = 'none';
         if (ordersLink) ordersLink.style.display = 'none';
         if (historyLink) historyLink.style.display = 'none';
-        if (document.getElementById('adminLink')) {
-            document.getElementById('adminLink').style.display = 'none';
-        }
+        const adminLink = document.getElementById('adminLink');
+        if (adminLink) adminLink.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'none';
         if (loginLink) loginLink.style.display = 'block';
         if (registerLink) registerLink.style.display = 'block';
