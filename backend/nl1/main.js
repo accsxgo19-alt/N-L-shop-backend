@@ -1333,6 +1333,10 @@ function getProductById(id) {
 }
 
 function getAllProducts() {
+    const cached = window.__productsCache;
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+        return cached;
+    }
     return getStoredProducts();
 }
 
@@ -1346,13 +1350,15 @@ async function syncProductsFromServer() {
                     ...product,
                     id: String(product.id || product._id || product._id || product.id || ''),
                 }));
-                saveProducts(normalized);
+                const productsCache = window.__productsCache || [];
+                window.__productsCache = normalized;
             }
         }
     } catch (err) {
         console.warn('Không thể đồng bộ sản phẩm từ server:', err);
     }
 }
+
 
 function filterProducts(searchTerm = '', category = '') {
     return getAllProducts().filter(product => {
@@ -1413,18 +1419,8 @@ async function loadProductDetail() {
     }
 
     let product = await fetchProductFromServer(productId);
-
     if (!product) {
         product = getProductById(productId);
-    } else {
-        const products = getAllProducts();
-        const index = products.findIndex(p => String(p.id) === String(product.id));
-        if (index !== -1) {
-            products[index] = product;
-        } else {
-            products.push(product);
-        }
-        saveProducts(products);
     }
 
     const rating = Number(product?.rating) || 0;
@@ -1679,6 +1675,45 @@ async function resolveProductMongoId(productId) {
     const product = await findServerProductByIdentifier(normalizedId);
     if (!product) return null;
     return String(product._id || product.id || '');
+}
+
+async function deleteProductFromServer(productId) {
+    if (!productId) {
+        alert('Không xác định được sản phẩm để xóa.');
+        return false;
+    }
+
+    if (!isLoggedIn() || !getCurrentUserToken()) {
+        alert('Vui lòng đăng nhập admin để xóa sản phẩm.');
+        return false;
+    }
+
+    try {
+        const actualProductId = await resolveProductMongoId(productId);
+        if (!actualProductId) {
+            alert('Không tìm thấy sản phẩm trên server để xóa.');
+            return false;
+        }
+
+        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(actualProductId)}`, {
+            method: 'DELETE',
+            headers: Object.assign({}, getAuthHeaders()),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.message || 'Xóa sản phẩm thất bại.');
+        }
+
+        localStorage.removeItem(STORAGE_PRODUCTS_KEY);
+        await syncProductsFromServer();
+
+        return true;
+    } catch (error) {
+        console.error('Lỗi xóa sản phẩm:', error);
+        alert(error.message || 'Không thể xóa sản phẩm.');
+        return false;
+    }
 }
 
 async function saveProductEdit(productId) {

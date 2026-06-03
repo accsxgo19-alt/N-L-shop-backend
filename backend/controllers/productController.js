@@ -98,7 +98,17 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const requestedId = String(req.params.id || '').trim();
+    let product = null;
+
+    if (mongoose.isValidObjectId(requestedId)) {
+      product = await Product.findById(requestedId);
+    }
+
+    if (!product) {
+      product = await Product.findOne({ id: requestedId });
+    }
+
     if (!product) {
       return res.status(404).json({ message: 'Sản phẩm không tìm thấy.' });
     }
