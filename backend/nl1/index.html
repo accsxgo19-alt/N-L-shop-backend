@@ -280,17 +280,19 @@
         if (searchInput) searchInput.value = '';
         if (categoryFilter) categoryFilter.value = '';
 
-        // Prefer API-first: sync from server before rendering products to avoid transient local-only items
-        if (typeof syncProductsFromServer === 'function') {
-            await syncProductsFromServer().catch(() => {});
+        if (typeof loadProducts === 'function') {
+            loadProducts('', '');
         }
 
         if (typeof setupSearchAndFilter === 'function') {
             setupSearchAndFilter();
         }
 
-        if (typeof loadProducts === 'function') {
-            loadProducts('', '');
+        if (typeof syncProductsFromServer === 'function') {
+            await syncProductsFromServer().catch(() => {});
+            if (typeof loadProducts === 'function') {
+                loadProducts('', '');
+            }
         }
 
         if (typeof showEmailPopupSafely === 'function') {

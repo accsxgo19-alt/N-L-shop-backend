@@ -5,6 +5,11 @@ const Product = require('../models/Product');
 const createOrder = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
+
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
+    }
+
     const {
       fullname,
       phone,
@@ -12,59 +17,22 @@ const createOrder = async (req, res) => {
       paymentMethod,
       discountCode = '',
       discountAmount = 0,
-      items: requestedItems = [],
     } = req.body || {};
 
-    let orderItems = [];
-
-    if (Array.isArray(requestedItems) && requestedItems.length > 0) {
-      const normalizedItems = requestedItems.map((item) => ({
-        productId: String(item.productId || item.product || ''),
-        quantity: Number(item.quantity) || 0,
-      })).filter((item) => item.productId && item.quantity > 0);
-
-      if (normalizedItems.length === 0) {
-        return res.status(400).json({ message: 'Dữ liệu đơn hàng không hợp lệ.' });
-      }
-
-      const productIds = normalizedItems.map((item) => item.productId);
-      const products = await Product.find({ _id: { $in: productIds } });
-
-      orderItems = normalizedItems.map((item) => {
-        const product = products.find((p) => p._id.toString() === item.productId);
-        if (!product) {
-          throw new Error(`Sản phẩm không tồn tại khi tạo đơn hàng: ${item.productId}`);
-        }
-        return {
-          product: product._id,
-          name: product.name,
-          price: product.price,
-          quantity: item.quantity,
-        };
-      });
-    } else {
-      if (!cart || cart.items.length === 0) {
-        return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
-      }
-      orderItems = cart.items.map((item) => ({
-        product: item.product._id,
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-      }));
-    }
-
-    if (orderItems.length === 0) {
-      return res.status(400).json({ message: 'Không có sản phẩm để tạo đơn hàng.' });
-    }
+    const orderItems = cart.items.map((item) => ({
+      product: item.product._id,
+      name: item.product.name,
+      price: item.product.price,
+      quantity: item.quantity,
+    }));
 
     const totalAmount = orderItems.reduce((sum, item) => {
       return sum + item.price * item.quantity;
     }, 0);
 
     await Promise.all(
-      orderItems.map(async (item) => {
-        const product = await Product.findById(item.product);
+      cart.items.map(async (item) => {
+        const product = await Product.findById(item.product._id);
 
         if (!product) {
           throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
@@ -95,10 +63,8 @@ const createOrder = async (req, res) => {
       status: 'pending',
     });
 
-    if (cart) {
-      cart.items = [];
-      await cart.save();
-    }
+    cart.items = [];
+    await cart.save();
 
     try {
       const io = req.app.locals.io;
@@ -124,10 +90,7 @@ const createOrder = async (req, res) => {
 
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id })
-      .populate('user', 'name email')
-      .populate('items.product', 'name price image')
-      .sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     console.error(error);

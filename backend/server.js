@@ -26,8 +26,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
 
 app.use(
   cors({
@@ -124,7 +123,6 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
 
         if (item) {
           product.stock -= item.quantity;
-          product.sold = (product.sold || 0) + item.quantity;
           return product.save();
         }
 
