@@ -1350,7 +1350,7 @@ function getAllProducts() {
     if (window.__productsSyncStatus === 'success') {
         return [];
     }
-    return getStoredProducts();
+    return isIndexPage() ? [] : getStoredProducts();
 }
 
 async function syncProductsFromServer() {
@@ -1366,18 +1366,24 @@ async function syncProductsFromServer() {
                 // Always replace cache with server response (may be empty [])
                 window.__productsCache = normalized;
                 window.__productsSyncStatus = 'success';
+                saveHomepageProductsCache(normalized);
+                window.dispatchEvent(new CustomEvent('products:updated', { detail: { products: normalized } }));
                 return normalized;
             }
             window.__productsCache = [];
             window.__productsSyncStatus = 'success';
+            saveHomepageProductsCache([]);
+            window.dispatchEvent(new CustomEvent('products:updated', { detail: { products: [] } }));
             return [];
         }
         console.warn('Đồng bộ sản phẩm thất bại, server trả lỗi:', res.status);
         window.__productsSyncStatus = 'failed';
+        window.dispatchEvent(new CustomEvent('products:error', { detail: { status: res.status, message: 'Không thể tải sản phẩm từ server.' } }));
         return null;
     } catch (err) {
         console.warn('Không thể đồng bộ sản phẩm từ server:', err);
         window.__productsSyncStatus = 'failed';
+        window.dispatchEvent(new CustomEvent('products:error', { detail: { message: 'Không thể kết nối đến server.' } }));
         return null;
     }
 }
@@ -1424,9 +1430,16 @@ function clearBuyNowItem() {
 }
 
 function setBuyNow(productId, quantity = 1) {
-    if (!requireLoginBeforeAction()) return;
     const { color, size } = getSelectedProductOptions();
-    saveBuyNowItem({ productId, quantity, color, size });
+    const buyNowItem = { productId, quantity, color, size };
+    saveBuyNowItem(buyNowItem);
+
+    if (!isLoggedIn()) {
+        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        window.location.href = 'login.html';
+        return;
+    }
+
     window.location.href = 'checkout.html';
 }
 
@@ -1881,6 +1894,25 @@ syncProductsFromServer();
 initSocket();
 fetchAndStoreUserOrders().catch(() => { });
 
+function isIndexPage() {
+    const path = window.location.pathname || '';
+    return path === '/' || path.endsWith('/index.html') || path === '';
+}
+
+function initializeHomepage() {
+    initializePage();
+    setupSearchAndFilter();
+    if (isIndexPage()) {
+        initializeIndexProducts();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeHomepage);
+} else {
+    initializeHomepage();
+}
+
 async function addProductDetailToCart() {
     if (!requireLoginBeforeAction()) return;
     
@@ -2026,6 +2058,106 @@ function updateCartCount() {
     if (cartCount) {
         cartCount.textContent = getCart().length;
     }
+}
+
+function getHomepageProductsCache() {
+    const raw = sessionStorage.getItem('homepageProductsCache');
+    if (!raw) return null;
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.products) || typeof parsed.timestamp !== 'number') {
+            return null;
+        }
+        return parsed;
+    } catch (err) {
+        return null;
+    }
+}
+
+function saveHomepageProductsCache(products) {
+    if (!Array.isArray(products)) return;
+    const payload = {
+        products,
+        timestamp: Date.now(),
+    };
+    sessionStorage.setItem('homepageProductsCache', JSON.stringify(payload));
+}
+
+function renderProductsSkeletons(count = 8) {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < count; i += 1) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'product-card product-card-skeleton';
+        skeleton.innerHTML = `
+            <div class="product-image-box">
+                <div class="skeleton skeleton-image"></div>
+            </div>
+            <div class="product-card-body">
+                <div class="skeleton skeleton-text short"></div>
+                <div class="skeleton skeleton-text medium"></div>
+                <div class="skeleton skeleton-text long"></div>
+                <div class="skeleton skeleton-text price"></div>
+            </div>
+            <div class="product-actions">
+                <div class="skeleton skeleton-button"></div>
+                <div class="skeleton skeleton-button"></div>
+            </div>
+        `;
+        container.appendChild(skeleton);
+    }
+}
+
+function renderProductsError(message) {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    const errorBox = document.createElement('div');
+    errorBox.className = 'products-error-message';
+    errorBox.textContent = message || 'Không thể tải sản phẩm. Vui lòng thử lại sau.';
+    container.innerHTML = '';
+    container.appendChild(errorBox);
+}
+
+function initializeIndexProducts() {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+
+    renderProductsSkeletons();
+
+    const cache = getHomepageProductsCache();
+    const isCacheFresh = cache && (Date.now() - cache.timestamp) < 30 * 1000;
+    if (isCacheFresh) {
+        window.__productsCache = cache.products;
+        window.__productsSyncStatus = 'success';
+        loadProducts();
+    }
+
+    const refreshProducts = () => {
+        if (!document.getElementById('productsContainer')) return;
+        if (window.__productsSyncStatus === 'success') {
+            loadProducts();
+        }
+    };
+
+    window.addEventListener('products:updated', () => {
+        loadProducts();
+    });
+
+    window.addEventListener('products:error', (event) => {
+        if (window.__productsSyncStatus !== 'success' && !(isCacheFresh && window.__productsCache?.length)) {
+            renderProductsError(event?.detail?.message);
+        }
+        if (isCacheFresh) {
+            const info = document.createElement('div');
+            info.className = 'products-error-note';
+            info.textContent = 'Hiện tại không thể cập nhật sản phẩm mới. Hiển thị dữ liệu gần nhất.';
+            if (!document.querySelector('.products-error-note')) {
+                container.parentElement.insertBefore(info, container);
+            }
+        }
+    });
 }
 
 function loadProducts(searchTerm = '', category = '') {
