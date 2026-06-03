@@ -11,6 +11,39 @@
   --glass-border: rgba(255, 255, 255, 0.18);
 }
 
+/* ===== Force admin preview price visible ===== */
+#productPreview .preview-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  overflow: visible !important;
+}
+
+#productPreview #previewPrice {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 5 !important;
+  height: auto !important;
+  min-height: 30px !important;
+  max-height: none !important;
+  margin: 4px 0 6px !important;
+  padding: 0 !important;
+  color: #ff6ec7 !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  text-shadow: 0 0 18px rgba(255,110,199,0.35) !important;
+}
+
+#productPreview .preview-description {
+  max-height: 52px !important;
+  overflow: hidden !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
