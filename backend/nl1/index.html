@@ -103,8 +103,27 @@
                 </div>
         </div>
 
-        <script src="./main.js"></script>
+        <!-- If you're serving the frontend separately (Live Server / GitHub Pages),
+             we auto-detect Live Server (127.0.0.1 with other port) and point
+             the frontend to local backend for convenience. For GitHub Pages
+             or production, set `window.API_BASE_OVERRIDE` yourself to the
+             deployed backend URL BEFORE loading main.js.
+        -->
         <script>
+            // Auto-override API base when running on Live Server (127.0.0.1 with port != 5000)
+            (function() {
+                try {
+                    const host = window.location.hostname;
+                    const port = String(window.location.port || '');
+                    if ((host === '127.0.0.1' || host === 'localhost') && port && port !== '5000') {
+                        window.API_BASE_OVERRIDE = 'http://localhost:5000';
+                        console.info('API_BASE_OVERRIDE set to http://localhost:5000 for Live Server');
+                    }
+                } catch (e) { /* ignore */ }
+            })();
+        </script>
+        <script src="./main.js"></script>
+           <script>
 (function () {
     const POPUP_CLOSED_KEY = 'emailPopupClosed';
     const POPUP_SUBMITTED_KEY = 'emailPopupSubmitted';

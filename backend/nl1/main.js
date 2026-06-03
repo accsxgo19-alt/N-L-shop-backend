@@ -1,10 +1,15 @@
 // ==================== PRODUCTS DATA ====================
 const LOCAL_BACKEND_ORIGIN = 'http://localhost:5000';
-const API_BASE = window.location.protocol === 'file:'
-    ? LOCAL_BACKEND_ORIGIN
-    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+// Allow an explicit override for static hosting (Live Server / GitHub Pages)
+// Usage: before loading main.js, set `window.API_BASE_OVERRIDE = 'https://your-backend.example'`
+const API_BASE = (typeof window !== 'undefined' && window.API_BASE_OVERRIDE)
+    ? window.API_BASE_OVERRIDE
+    : (window.location.protocol === 'file:'
         ? LOCAL_BACKEND_ORIGIN
-        : window.location.origin;
+        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? LOCAL_BACKEND_ORIGIN
+            : window.location.origin);
 
 const STORAGE_PRODUCTS_KEY = 'products';
 const STORAGE_ACTIVITY_KEY = 'activityLogs';
