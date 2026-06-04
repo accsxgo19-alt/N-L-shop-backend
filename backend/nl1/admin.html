@@ -528,9 +528,14 @@
                         handleAuthFailure();
                         return;
                     }
-                    const result = await response.json().catch(() => ({}));
-                    const serverMessage = result && result.message ? result.message : `Lỗi server: ${response.status}`;
-                    message.textContent = serverMessage;
+                    // Keep detailed info in console for debugging, but show simple message to user
+                    try {
+                        const debugBody = await response.clone().text();
+                        console.error('Admin product save failed', response.status, response.statusText, debugBody);
+                    } catch (e) {
+                        console.error('Admin product save failed', response.status, response.statusText);
+                    }
+                    message.textContent = 'Không thể lưu sản phẩm lên server';
                     return;
                 }
 

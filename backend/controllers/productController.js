@@ -78,12 +78,12 @@ const updateProduct = async (req, res) => {
     product.id = id ?? product.id;
     product.name = name ?? product.name;
     product.image = image ?? product.image;
-    product.price = price ?? product.price;
+    product.price = (price != null) ? Number(price) : product.price;
     product.category = category ?? product.category;
     product.description = description ?? product.description;
-    product.stock = stock ?? product.stock;
-    product.rating = rating ?? product.rating;
-    product.sold = sold ?? product.sold;
+    product.stock = (stock != null) ? Number(stock) : (product.stock != null ? product.stock : 10);
+    product.rating = (rating != null) ? Number(rating) : (product.rating != null ? product.rating : 0);
+    product.sold = (sold != null) ? Number(sold) : (product.sold != null ? product.sold : 0);
 
     await product.save();
     res.json({ message: 'Cập nhật sản phẩm thành công.', product });
@@ -95,18 +95,21 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
+    const incomingId = req.params.id;
+    console.log('Delete product request for id:', incomingId);
     let product = null;
-    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-      product = await Product.findById(req.params.id);
+    if (mongoose.Types.ObjectId.isValid(incomingId)) {
+      product = await Product.findById(incomingId);
     }
     if (!product) {
-      product = await Product.findOne({ id: req.params.id });
+      product = await Product.findOne({ id: incomingId });
     }
     if (!product) {
       return res.status(404).json({ message: 'Sản phẩm không tìm thấy.' });
     }
 
-    await product.deleteOne();
+    const deleted = await Product.deleteOne({ _id: product._id });
+    console.log('Deleted product result:', deleted);
     res.json({ message: 'Xóa sản phẩm thành công.' });
   } catch (error) {
     console.error(error);

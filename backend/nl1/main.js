@@ -1420,21 +1420,7 @@ async function syncProductsFromServer() {
                     ...product,
                     id: String(product.id || product._id || ''),
                 }));
-
-                if (normalized.length === 0) {
-                    const fallbackProducts = getStoredProducts();
-                    if (fallbackProducts.length > 0) {
-                        window.__productsCache = fallbackProducts;
-                        window.__productsSyncStatus = 'failed';
-                        window.dispatchEvent(new CustomEvent('products:error', {
-                            detail: {
-                                message: 'Server chưa có sản phẩm. Hiển thị dữ liệu cục bộ.',
-                            }
-                        }));
-                        return fallbackProducts;
-                    }
-                }
-
+                // Accept server response as source of truth (even if empty)
                 window.__productsCache = normalized;
                 window.__productsSyncStatus = 'success';
                 saveHomepageProductsCache(normalized);
@@ -1447,10 +1433,10 @@ async function syncProductsFromServer() {
             window.dispatchEvent(new CustomEvent('products:error', { detail: { message: 'Dữ liệu sản phẩm không hợp lệ từ server.' } }));
             return fallbackProducts;
         }
-        console.warn('Đồng bộ sản phẩm thất bại, server trả lỗi:', res.status);
-        window.__productsSyncStatus = 'failed';
-        window.dispatchEvent(new CustomEvent('products:error', { detail: { status: res.status, message: 'Không thể tải sản phẩm từ server.' } }));
-        return null;
+            console.warn('Đồng bộ sản phẩm thất bại, server trả lỗi:', res.status);
+            window.__productsSyncStatus = 'failed';
+            window.dispatchEvent(new CustomEvent('products:error', { detail: { status: res.status, message: 'Không thể tải sản phẩm từ server.' } }));
+            return null;
     } catch (err) {
         console.warn('Không thể đồng bộ sản phẩm từ server:', err);
         window.__productsSyncStatus = 'failed';
@@ -2016,16 +2002,35 @@ async function saveProductEdit(productId) {
             body: JSON.stringify(payload),
         });
 
-        const result = await response.json().catch(() => ({}));
+        // Try to extract useful error info from response for debugging
+        let result = {};
+        try {
+            result = await response.json();
+        } catch (e) {
+            try {
+                const raw = await response.text();
+                result = { raw };
+            } catch (ee) {
+                result = {};
+            }
+        }
+
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 return handleAuthFailure();
             }
-            throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
+            try {
+                const debugBody = await response.clone().text();
+                console.error('Product save failed', response.status, response.statusText, debugBody);
+            } catch (e) {
+                console.error('Product save failed', response.status, response.statusText);
+            }
+            alert('Không thể lưu sản phẩm lên server');
+            return;
         }
 
         if (createdNewProduct && result && result.product) {
-            actualProductId = String(result.product.id || result.product._id || result.product.id || '');
+            actualProductId = String(result.product._id || result.product.id || '');
         }
 
         if (createdNewProduct) {
