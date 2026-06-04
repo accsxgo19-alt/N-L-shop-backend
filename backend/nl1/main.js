@@ -1410,6 +1410,16 @@ function getAllProducts() {
     return getStoredProducts();
 }
 
+// Clear ALL product caches (window, localStorage, sessionStorage)
+function clearAllProductsCache() {
+    window.__productsCache = null;
+    window.__productsSyncStatus = 'pending';
+    localStorage.removeItem('products');
+    localStorage.removeItem('shopProducts');
+    localStorage.removeItem('cachedProducts');
+    sessionStorage.removeItem('homepageProductsCache');
+}
+
 async function syncProductsFromServer() {
     try {
         const res = await fetch(`${API_BASE}/api/products`);
@@ -1906,11 +1916,7 @@ async function deleteProductFromServer(productId) {
         }
 
         // Clear known caches so UI always reloads from server
-        window.__productsCache = null;
-        window.__productsSyncStatus = 'pending';
-        localStorage.removeItem(STORAGE_PRODUCTS_KEY);
-        localStorage.removeItem('shopProducts');
-        localStorage.removeItem('cachedProducts');
+        clearAllProductsCache();
         await syncProductsFromServer();
 
         return true;
@@ -2038,9 +2044,7 @@ async function saveProductEdit(productId) {
         }
 
         // Clear known caches so UI always reloads from server
-        localStorage.removeItem(STORAGE_PRODUCTS_KEY);
-        localStorage.removeItem('shopProducts');
-        localStorage.removeItem('cachedProducts');
+        clearAllProductsCache();
         await syncProductsFromServer();
 
         alert('Cập nhật sản phẩm thành công.');
@@ -2326,7 +2330,7 @@ function renderProductsError(message) {
     container.appendChild(errorBox);
 }
 
-function initializeIndexProducts() {
+async function initializeIndexProducts() {
     const container = document.getElementById('productsContainer');
     if (!container) return;
 
@@ -2334,28 +2338,17 @@ function initializeIndexProducts() {
 
     const cache = getHomepageProductsCache();
     const isCacheFresh = cache && (Date.now() - cache.timestamp) < 30 * 1000;
-    if (isCacheFresh) {
-        window.__productsCache = cache.products;
-        window.__productsSyncStatus = 'success';
-        loadProducts();
-    }
-
-    const refreshProducts = () => {
-        if (!document.getElementById('productsContainer')) return;
-        if (window.__productsSyncStatus === 'success') {
-            loadProducts();
-        }
-    };
+    const offlineCache = isCacheFresh ? cache.products : null;
 
     window.addEventListener('products:updated', () => {
         loadProducts();
     });
 
     window.addEventListener('products:error', (event) => {
-        if (window.__productsSyncStatus !== 'success' && !(isCacheFresh && window.__productsCache?.length)) {
+        if (window.__productsSyncStatus !== 'success' && !offlineCache?.length) {
             renderProductsError(event?.detail?.message);
         }
-        if (isCacheFresh) {
+        if (offlineCache?.length) {
             const info = document.createElement('div');
             info.className = 'products-error-note';
             info.textContent = 'Hiện tại không thể cập nhật sản phẩm mới. Hiển thị dữ liệu gần nhất.';
@@ -2364,6 +2357,13 @@ function initializeIndexProducts() {
             }
         }
     });
+
+    const serverData = await syncProductsFromServer();
+    if (!serverData && offlineCache?.length) {
+        window.__productsCache = offlineCache;
+        window.__productsSyncStatus = 'success';
+        loadProducts();
+    }
 }
 
 function initializeAdminPageProducts() {
@@ -2381,9 +2381,14 @@ function initializeAdminPageProducts() {
     });
 }
 
-function loadProducts(searchTerm = '', category = '') {
+async function loadProducts(searchTerm = '', category = '') {
     const container = document.getElementById('productsContainer');
     if (!container) return;
+
+    // Ensure we have attempted to sync from server first
+    if (window.__productsSyncStatus !== 'success') {
+        await syncProductsFromServer().catch(() => { });
+    }
 
     const filteredProducts = filterProducts(searchTerm, category);
     container.innerHTML = '';

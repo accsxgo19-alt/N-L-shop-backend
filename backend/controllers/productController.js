@@ -5,7 +5,7 @@ const createProduct = async (req, res) => {
   try {
     const { id, name, image, price, category, description, stock, rating, sold } = req.body;
 
-    if (!name || price == null || !category || !description) {
+    if (!name || price == null || !category || !description || !image) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin sản phẩm.' });
     }
 
