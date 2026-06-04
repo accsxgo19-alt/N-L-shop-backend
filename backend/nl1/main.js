@@ -1445,7 +1445,14 @@ function setBuyNow(productId, quantity = 1) {
     saveBuyNowItem(buyNowItem);
 
     if (!isLoggedIn()) {
-        sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        // store an absolute redirect URL so the browser preserves sessionStorage
+        // regardless of how the login page resolves relative paths
+        try {
+            const redirectUrl = new URL('checkout.html', window.location.href).href;
+            sessionStorage.setItem('redirectAfterLogin', redirectUrl);
+        } catch (e) {
+            sessionStorage.setItem('redirectAfterLogin', 'checkout.html');
+        }
         window.location.href = 'login.html';
         return;
     }

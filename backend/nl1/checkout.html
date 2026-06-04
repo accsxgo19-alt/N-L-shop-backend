@@ -429,9 +429,8 @@
         }
 
         async function processCheckout() {
-            const buyNowItem = getBuyNowItem();
-            const cart = getCart();
-            const checkoutItems = buyNowItem ? [buyNowItem] : cart;
+            const checkoutItems = currentCheckoutItems || [];
+            const isBuyNowCheckout = Boolean(getBuyNowItem());
             const fullname = document.getElementById('fullname').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const address = getFullAddress();
@@ -532,7 +531,7 @@
             saveOrder(normalizedOrder);
             updateProductSales(checkoutItems);
 
-            if (buyNowItem) {
+            if (isBuyNowCheckout) {
                 clearBuyNowItem();
             } else {
                 clearCart();
