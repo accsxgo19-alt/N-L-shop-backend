@@ -277,6 +277,8 @@
                 await syncProductsFromServer().catch(() => {});
             }
 
+            await fetchAdminOrders().catch(() => {});
+
             loadAdminDashboard();
             renderProductTable();
             renderUserTable();
@@ -331,7 +333,8 @@
             });
 
             // realtime admin events
-            document.addEventListener('admin:newOrder', function(ev) {
+            document.addEventListener('admin:newOrder', async function(ev) {
+                await fetchAdminOrders().catch(() => {});
                 renderPendingOrders();
                 renderOrderTable();
                 const order = ev.detail && ev.detail.order;

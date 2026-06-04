@@ -698,6 +698,39 @@ function getUserOrders() {
     return allOrders.filter(order => order.userEmail === currentUser.email);
 }
 
+function fetchAdminOrders() {
+    if (!isAdmin() || !getCurrentUserToken()) return Promise.resolve([]);
+    return fetch(`${API_BASE}/api/orders`, { headers: getAuthHeaders() })
+        .then(r => r.ok ? r.json() : [])
+        .then(orders => {
+            if (!Array.isArray(orders)) return [];
+            const mapped = (orders || []).map(o => ({
+                id: String(o._id || o.id || o.orderId || ''),
+                userEmail: o.customerEmail || o.email || (o.user && o.user.email) || getCurrentUser()?.email || '',
+                fullname: o.customerName || o.fullname || o.name || '',
+                phone: o.customerPhone || o.phone || '',
+                shippingAddress: o.shippingAddress || o.address || '',
+                email: o.customerEmail || o.email || getCurrentUser()?.email || '',
+                paymentMethod: o.paymentMethod || 'cash',
+                items: (o.items || []).map(i => ({
+                    productId: String(i.product || i.productId || i.id || i._id || ''),
+                    quantity: Number(i.quantity) || 1,
+                    name: i.name || (i.product && i.product.name) || '',
+                    price: Number(i.price || (i.product && i.product.price)) || 0,
+                    image: i.image || (i.product && i.product.image) || ''
+                })),
+                total: Number(o.totalAmount || o.total) || 0,
+                date: o.date || o.createdAt || new Date().toISOString(),
+                status: o.status || 'pending',
+                discountCode: o.discountCode || '',
+                discountAmount: Number(o.discountAmount) || 0,
+            }));
+            saveAllOrders(mapped);
+            return mapped;
+        })
+        .catch(() => []);
+}
+
 function fetchAndStoreUserOrders() {
     if (!isLoggedIn()) return Promise.resolve([]);
 

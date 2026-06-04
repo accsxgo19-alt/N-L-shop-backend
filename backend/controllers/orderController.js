@@ -141,6 +141,18 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Lỗi khi lấy danh sách đơn hàng.',
+    });
+  }
+};
+
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('user', 'name email');
@@ -224,6 +236,7 @@ const updateOrderStatus = async (req, res) => {
 module.exports = {
   createOrder,
   getMyOrders,
+  getAllOrders,
   getOrderById,
   updateOrderStatus,
 };
