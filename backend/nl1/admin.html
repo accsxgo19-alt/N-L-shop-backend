@@ -440,11 +440,27 @@
             const name = document.getElementById('productName').value.trim();
             const category = document.getElementById('productCategory').value.trim();
             const price = Number(document.getElementById('productPrice').value);
-            const image = document.getElementById('productImage').value.trim();
+            const imageInput = document.getElementById('productImage');
+            const imageFileInput = document.getElementById('productImageFile');
             const rating = Number(document.getElementById('productRating').value);
             const sold = Number(document.getElementById('productSold').value);
             const description = document.getElementById('productDescription').value.trim();
             const message = document.getElementById('productMessage');
+
+            let image = imageInput?.value.trim() || '';
+            if (imageFileInput?.files?.[0]) {
+                try {
+                    image = await new Promise((resolve, reject) => {
+                        const file = imageFileInput.files[0];
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Không thể đọc file ảnh.'));
+                        reader.readAsDataURL(file);
+                    });
+                } catch (err) {
+                    console.warn('Không thể đọc ảnh sản phẩm:', err);
+                }
+            }
 
             if (!name || !category || !price || !image || !description) {
                 message.textContent = 'Vui lòng điền đầy đủ thông tin sản phẩm.';
@@ -478,17 +494,24 @@
                 let response;
                 const editMode = Boolean(idInput.value);
                 let actualId = idInput.value;
+                let createAsNew = false;
                 if (editMode) {
                     actualId = await resolveProductMongoId(idInput.value);
                     if (!actualId) {
-                        message.textContent = 'Không tìm thấy sản phẩm trên server để cập nhật.';
-                        return;
+                        createAsNew = true;
                     }
                 }
 
-                if (editMode) {
+                if (editMode && !createAsNew) {
                     response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(actualId)}`, {
                         method: 'PUT',
+                        headers,
+                        body: JSON.stringify(productPayload),
+                    });
+                } else if (editMode && createAsNew) {
+                    productPayload.id = idInput.value || undefined;
+                    response = await fetch(`${API_BASE}/api/products`, {
+                        method: 'POST',
                         headers,
                         body: JSON.stringify(productPayload),
                     });
@@ -522,7 +545,11 @@
                 document.getElementById('productForm').reset();
                 idInput.value = '';
                 updateProductPreview();
-                message.textContent = editMode ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
+                if (editMode && createAsNew) {
+                    message.textContent = 'Sản phẩm chưa tồn tại trên server, đã tạo mới và lưu thành công.';
+                } else {
+                    message.textContent = editMode ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
+                }
                 setTimeout(() => message.textContent = '', 3000);
                 return;
             } catch (err) {

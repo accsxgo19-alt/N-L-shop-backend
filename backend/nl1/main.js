@@ -1790,9 +1790,28 @@ async function getAllProductsFromServer() {
     }
 }
 
+async function fetchServerProductByIdentifier(productId) {
+    if (!productId) return null;
+    const normalizedId = String(productId).trim();
+    try {
+        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(normalizedId)}`);
+        if (!response.ok) return null;
+        const product = await response.json();
+        return product && typeof product === 'object' ? product : null;
+    } catch (error) {
+        return null;
+    }
+}
+
 async function findServerProductByIdentifier(productId) {
     if (!productId) return null;
     const normalizedId = String(productId).trim();
+
+    const directMatch = await fetchServerProductByIdentifier(normalizedId);
+    if (directMatch) {
+        return directMatch;
+    }
+
     const products = await getAllProductsFromServer();
     if (!products) return null;
 
@@ -1854,6 +1873,20 @@ async function resolveProductMongoId(productId) {
     const product = await findServerProductByIdentifier(normalizedId);
     if (!product) return null;
     return String(product._id || product.id || '');
+}
+
+function readFileInputToDataURL(fileInput) {
+    return new Promise((resolve, reject) => {
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            resolve('');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Không thể đọc file ảnh.'));
+        reader.readAsDataURL(fileInput.files[0]);
+    });
 }
 
 async function deleteProductFromServer(productId) {
@@ -1924,7 +1957,19 @@ async function saveProductEdit(productId) {
     const stock = Number(stockInput.value);
     const rating = Number(ratingInput.value);
     const sold = Number(soldInput.value);
-    const image = imageInput.value.trim();
+    const imageFileInput = document.getElementById('editProductImageFile');
+    let image = imageInput.value.trim();
+
+    if (imageFileInput?.files?.[0]) {
+        try {
+            const dataUrl = await readFileInputToDataURL(imageFileInput);
+            if (dataUrl) {
+                image = dataUrl;
+            }
+        } catch (err) {
+            console.warn('Không thể đọc ảnh lên form chỉnh sửa:', err);
+        }
+    }
 
     if (!name || Number.isNaN(price) || price < 0 || !category || !description || Number.isNaN(stock) || stock < 0 || Number.isNaN(rating) || rating < 0 || rating > 5 || Number.isNaN(sold) || sold < 0) {
         alert('Vui lòng nhập đầy đủ thông tin sản phẩm hợp lệ.');
@@ -1942,25 +1987,33 @@ async function saveProductEdit(productId) {
     }
 
     try {
-        const actualProductId = await resolveProductMongoId(productId);
+        let actualProductId = await resolveProductMongoId(productId);
+        let requestMethod = 'PUT';
+        let requestUrl = `${API_BASE}/api/products/${encodeURIComponent(actualProductId)}`;
+        let createdNewProduct = false;
+
+        const payload = {
+            name,
+            image: image || undefined,
+            price,
+            category,
+            description,
+            stock,
+            rating,
+            sold,
+        };
+
         if (!actualProductId) {
-            alert('Không tìm thấy sản phẩm trên server để cập nhật.');
-            return;
+            requestMethod = 'POST';
+            requestUrl = `${API_BASE}/api/products`;
+            payload.id = productId || undefined;
+            createdNewProduct = true;
         }
 
-        const response = await fetch(`${API_BASE}/api/products/${encodeURIComponent(actualProductId)}`, {
-            method: 'PUT',
+        const response = await fetch(requestUrl, {
+            method: requestMethod,
             headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
-            body: JSON.stringify({
-                name,
-                image: image || undefined,
-                price,
-                category,
-                description,
-                stock,
-                rating,
-                sold,
-            }),
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json().catch(() => ({}));
@@ -1969,6 +2022,14 @@ async function saveProductEdit(productId) {
                 return handleAuthFailure();
             }
             throw new Error(result.message || 'Cập nhật sản phẩm thất bại.');
+        }
+
+        if (createdNewProduct && result && result.product) {
+            actualProductId = String(result.product.id || result.product._id || result.product.id || '');
+        }
+
+        if (createdNewProduct) {
+            alert('Sản phẩm chưa tồn tại trên server, đã tạo mới và lưu thành công.');
         }
 
         // Clear known caches so UI always reloads from server
