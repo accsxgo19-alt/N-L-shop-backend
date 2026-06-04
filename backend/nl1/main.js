@@ -2043,9 +2043,11 @@ async function saveProductEdit(productId) {
             alert('Sản phẩm chưa tồn tại trên server, đã tạo mới và lưu thành công.');
         }
 
-        // Clear known caches so UI always reloads from server
+        // Clear known caches so UI always reloads from server in background
         clearAllProductsCache();
-        await syncProductsFromServer();
+        syncProductsFromServer().catch((syncErr) => {
+            console.error('Sync after product save failed:', syncErr);
+        });
 
         alert('Cập nhật sản phẩm thành công.');
         if (isAdmin()) {

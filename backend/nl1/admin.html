@@ -478,6 +478,8 @@
                 return;
             }
 
+            message.textContent = 'Đang lưu sản phẩm...';
+
             try {
                 const stock = Number(document.getElementById('productStock')?.value);
                 const productPayload = {
@@ -491,6 +493,8 @@
                     rating,
                     sold,
                 };
+
+                message.textContent = 'Đang lưu sản phẩm...';
 
                 const headers = {
                     'Content-Type': 'application/json',
@@ -550,18 +554,23 @@
                     return;
                 }
 
+                message.textContent = editMode && createAsNew
+                    ? 'Sản phẩm chưa tồn tại trên server, đã tạo mới và lưu thành công.'
+                    : editMode
+                        ? 'Cập nhật sản phẩm thành công.'
+                        : 'Thêm sản phẩm mới thành công.';
+
                 clearAllProductsCache();
-                await syncProductsFromServer();
-                renderProductTable();
-                loadAdminDashboard();
+                syncProductsFromServer().then(() => {
+                    renderProductTable();
+                    loadAdminDashboard();
+                }).catch((syncErr) => {
+                    console.error('Sync after product save failed:', syncErr);
+                });
+
                 document.getElementById('productForm').reset();
                 idInput.value = '';
                 updateProductPreview();
-                if (editMode && createAsNew) {
-                    message.textContent = 'Sản phẩm chưa tồn tại trên server, đã tạo mới và lưu thành công.';
-                } else {
-                    message.textContent = editMode ? 'Cập nhật sản phẩm thành công.' : 'Thêm sản phẩm mới thành công.';
-                }
                 setTimeout(() => message.textContent = '', 3000);
                 return;
             } catch (err) {
