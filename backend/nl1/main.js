@@ -1684,6 +1684,7 @@ function renderProductDetailView(product, editMode) {
                     <button type="button" class="btn btn-primary btn-wide" onclick="saveProductEdit('${product.id}')">Lưu thay đổi</button>
                     <button type="button" class="btn btn-secondary btn-wide" onclick="window.location.href='product.html?id=${encodeURIComponent(product.id)}'">Hủy</button>
                 </div>
+                <div id="editProductStatus" class="product-status-message"></div>
             </form>
         `;
         setupProductEditForm();
@@ -1950,9 +1951,14 @@ async function saveProductEdit(productId) {
     const rating = Number(ratingInput.value);
     const sold = Number(soldInput.value);
     const imageFileInput = document.getElementById('editProductImageFile');
+    const statusElement = document.getElementById('editProductStatus');
     let image = imageInput.value.trim();
 
-    if (imageFileInput?.files?.[0]) {
+    if (statusElement) {
+        statusElement.textContent = 'Đang lưu sản phẩm...';
+    }
+
+    if (imageFileInput?.files?.[0] && !image.startsWith('data:image/')) {
         try {
             const dataUrl = await readFileInputToDataURL(imageFileInput);
             if (dataUrl) {
