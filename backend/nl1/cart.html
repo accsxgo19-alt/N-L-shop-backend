@@ -283,18 +283,25 @@
             displayCart();
         }
 
-        function changeQuantity(productId, change) {
-            updateCartQuantity(productId, change);
+        async function changeQuantity(productId, change) {
+            try {
+                await updateCartQuantity(productId, change);
+            } catch (e) {
+                console.error('changeQuantity error', e);
+            }
             displayCart();
             updateCartCount();
         }
 
-        function removeFromCart(productId) {
-            if (confirm('Xóa sản phẩm này khỏi giỏ hàng?')) {
-                removeFromCartItem(productId);
-                displayCart();
-                updateCartCount();
+        async function removeFromCart(productId) {
+            if (!confirm('Xóa sản phẩm này khỏi giỏ hàng?')) return;
+            try {
+                await removeFromCartItem(productId);
+            } catch (e) {
+                console.error('removeFromCart error', e);
             }
+            displayCart();
+            updateCartCount();
         }
     </script>
 </body>

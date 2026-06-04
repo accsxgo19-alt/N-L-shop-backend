@@ -434,8 +434,19 @@
         }
 
         async function processCheckout() {
-            const checkoutItems = currentCheckoutItems || [];
+            let checkoutItems = (currentCheckoutItems || []).slice();
             const isBuyNowCheckout = Boolean(getBuyNowItem());
+
+            // If items are unexpectedly empty (race or storage sync), try to recover from storage
+            if (!checkoutItems || checkoutItems.length === 0) {
+                const buyNow = getBuyNowItem();
+                const cart = getCart() || [];
+                if (buyNow) {
+                    checkoutItems = [buyNow];
+                } else if (Array.isArray(cart) && cart.length > 0) {
+                    checkoutItems = cart;
+                }
+            }
             const fullname = document.getElementById('fullname').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const address = getFullAddress();
@@ -573,7 +584,8 @@
                 const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
-                    if (response.status === 404 || response.status === 502 || response.status === 503) {
+                    if (response.status === 404 || response.status === 502 || response.status === 503 || response.status === 401) {
+                        // Allow local fallback when server is unavailable or user is unauthenticated
                         return { success: false, localFallback: true };
                     }
 
