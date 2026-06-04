@@ -213,9 +213,12 @@ function getStoredProducts() {
     const stored = localStorage.getItem(STORAGE_PRODUCTS_KEY);
     if (stored) {
         try {
-            return JSON.parse(stored);
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
         } catch (error) {
-            return products;
+            // ignore invalid JSON and fall through to default products
         }
     }
     return products;
@@ -226,7 +229,18 @@ function saveProducts(productList) {
 }
 
 function initializeProductData() {
-    if (!localStorage.getItem(STORAGE_PRODUCTS_KEY)) {
+    const stored = localStorage.getItem(STORAGE_PRODUCTS_KEY);
+    if (!stored) {
+        saveProducts(products);
+        return;
+    }
+
+    try {
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            saveProducts(products);
+        }
+    } catch (error) {
         saveProducts(products);
     }
 }
@@ -1396,18 +1410,32 @@ async function syncProductsFromServer() {
                     ...product,
                     id: String(product.id || product._id || ''),
                 }));
-                // Always replace cache with server response (may be empty [])
+
+                if (normalized.length === 0) {
+                    const fallbackProducts = getStoredProducts();
+                    if (fallbackProducts.length > 0) {
+                        window.__productsCache = fallbackProducts;
+                        window.__productsSyncStatus = 'failed';
+                        window.dispatchEvent(new CustomEvent('products:error', {
+                            detail: {
+                                message: 'Server chưa có sản phẩm. Hiển thị dữ liệu cục bộ.',
+                            }
+                        }));
+                        return fallbackProducts;
+                    }
+                }
+
                 window.__productsCache = normalized;
                 window.__productsSyncStatus = 'success';
                 saveHomepageProductsCache(normalized);
                 window.dispatchEvent(new CustomEvent('products:updated', { detail: { products: normalized } }));
                 return normalized;
             }
-            window.__productsCache = [];
-            window.__productsSyncStatus = 'success';
-            saveHomepageProductsCache([]);
-            window.dispatchEvent(new CustomEvent('products:updated', { detail: { products: [] } }));
-            return [];
+            const fallbackProducts = getStoredProducts();
+            window.__productsCache = fallbackProducts;
+            window.__productsSyncStatus = 'failed';
+            window.dispatchEvent(new CustomEvent('products:error', { detail: { message: 'Dữ liệu sản phẩm không hợp lệ từ server.' } }));
+            return fallbackProducts;
         }
         console.warn('Đồng bộ sản phẩm thất bại, server trả lỗi:', res.status);
         window.__productsSyncStatus = 'failed';
