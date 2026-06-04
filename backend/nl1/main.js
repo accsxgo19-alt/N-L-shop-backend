@@ -699,17 +699,25 @@ function saveAllOrders(orders) {
 }
 
 function getUserOrders() {
-    if (isLoggedIn()) {
-        return fetchAndStoreUserOrders().then(() => {
-            const currentUser = getCurrentUser();
-            const allOrders = getAllOrders();
-            return allOrders.filter(order => order.userEmail === currentUser.email);
-        });
-    }
-    if (!isLoggedIn()) return [];
     const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.email) return [];
+
     const allOrders = getAllOrders();
-    return allOrders.filter(order => order.userEmail === currentUser.email);
+    const userOrders = allOrders.filter(order => order.userEmail === currentUser.email);
+
+    if (isLoggedIn() && !window.__ordersFetchPending) {
+        window.__ordersFetchPending = true;
+        fetchAndStoreUserOrders()
+            .then((orders) => {
+                window.__ordersFetchPending = false;
+                window.dispatchEvent(new CustomEvent('orders:updated', { detail: { orders } }));
+            })
+            .catch(() => {
+                window.__ordersFetchPending = false;
+            });
+    }
+
+    return userOrders;
 }
 
 function fetchAdminOrders() {
@@ -742,7 +750,9 @@ function fetchAdminOrders() {
             saveAllOrders(mapped);
             return mapped;
         })
-        .catch(() => []);
+        .catch(() => {
+            return Promise.resolve([]);
+        });
 }
 
 function fetchAndStoreUserOrders() {

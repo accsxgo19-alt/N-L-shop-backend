@@ -75,12 +75,20 @@
                 window.location.href = 'login.html';
                 return;
             }
+
             const cachedOrders = getUserOrders() || [];
             displayOrders(cachedOrders);
 
             const orders = await fetchUserOrders();
             if (orders && orders.length) {
                 displayOrders(orders);
+            }
+        });
+
+        window.addEventListener('orders:updated', function(event) {
+            const updatedOrders = event.detail?.orders;
+            if (Array.isArray(updatedOrders)) {
+                displayOrders(updatedOrders);
             }
         });
 
