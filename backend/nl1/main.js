@@ -1416,17 +1416,42 @@ function getQueryParam(name) {
     return params.get(name);
 }
 
+// Save/get/clear buyNowItem with localStorage fallback so it survives login redirects/tabs
 function saveBuyNowItem(item) {
-    sessionStorage.setItem('buyNowItem', JSON.stringify(item));
+    try {
+        const serialized = JSON.stringify(item || {});
+        sessionStorage.setItem('buyNowItem', serialized);
+        // also save to localStorage as a fallback
+        localStorage.setItem('buyNowItem', serialized);
+    } catch (e) {
+        console.error('saveBuyNowItem failed', e);
+    }
 }
 
 function getBuyNowItem() {
-    const item = sessionStorage.getItem('buyNowItem');
-    return item ? JSON.parse(item) : null;
+    try {
+        const s = sessionStorage.getItem('buyNowItem');
+        if (s) return JSON.parse(s);
+        const l = localStorage.getItem('buyNowItem');
+        if (l) {
+            // restore into sessionStorage for subsequent flows
+            sessionStorage.setItem('buyNowItem', l);
+            return JSON.parse(l);
+        }
+        return null;
+    } catch (e) {
+        console.error('getBuyNowItem failed', e);
+        return null;
+    }
 }
 
 function clearBuyNowItem() {
-    sessionStorage.removeItem('buyNowItem');
+    try {
+        sessionStorage.removeItem('buyNowItem');
+        localStorage.removeItem('buyNowItem');
+    } catch (e) {
+        console.error('clearBuyNowItem failed', e);
+    }
 }
 
 function setBuyNow(productId, quantity = 1) {
@@ -1442,11 +1467,10 @@ function setBuyNow(productId, quantity = 1) {
         price: Number(product.price || 0),
         image: product.image || ''
     };
+
     saveBuyNowItem(buyNowItem);
 
     if (!isLoggedIn()) {
-        // store an absolute redirect URL so the browser preserves sessionStorage
-        // regardless of how the login page resolves relative paths
         try {
             const redirectUrl = new URL('checkout.html', window.location.href).href;
             sessionStorage.setItem('redirectAfterLogin', redirectUrl);
@@ -1458,6 +1482,23 @@ function setBuyNow(productId, quantity = 1) {
     }
 
     window.location.href = 'checkout.html';
+}
+
+// Attach handler helper: binds a click listener to the buy-now button rendered on product page
+function attachBuyNowHandler(productId) {
+    try {
+        const btn = document.getElementById('buyNowBtn-' + String(productId));
+        if (!btn) return;
+        if (btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const qty = Number(document.getElementById('detailQuantity')?.value) || 1;
+            setBuyNow(productId, qty);
+        });
+    } catch (e) {
+        console.error('attachBuyNowHandler error', e);
+    }
 }
 
 async function loadProductDetail() {
@@ -1608,11 +1649,12 @@ async function loadProductDetail() {
                 </div>
                 <div class="product-detail-actions">
                     <button type="button" class="btn btn-secondary" onclick="addProductDetailToCart()">Thêm vào giỏ</button>
-                    <button type="button" class="btn btn-primary" onclick="setBuyNow('${product.id}', Number(document.getElementById('detailQuantity').value))">Thanh toán ngay</button>
+                    <button type="button" id="buyNowBtn-${product.id}" class="btn btn-primary">Thanh toán ngay</button>
                 </div>
             </div>
         </div>
     `;
+    attachBuyNowHandler(product.id);
 }
 
 function setupProductEditForm() {
