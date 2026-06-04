@@ -107,6 +107,14 @@
                 return;
             }
 
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                document.getElementById('fullname').value = currentUser.fullname || '';
+                document.getElementById('email').value = currentUser.email || '';
+                document.getElementById('phone').value = currentUser.phone || '';
+                document.getElementById('address').value = currentUser.address || '';
+            }
+
             loadUserData();
 
             document.getElementById('accountForm').addEventListener('submit', function(e) {

@@ -273,20 +273,24 @@
                 return;
             }
 
-            if (typeof syncProductsFromServer === 'function') {
-                await syncProductsFromServer().catch(() => {});
+            if (typeof initializeAdminPageProducts === 'function') {
+                initializeAdminPageProducts();
             }
 
-            await fetchAdminOrders().catch(() => {});
+            if (typeof syncProductsFromServer === 'function') {
+                syncProductsFromServer().catch(() => {});
+            }
 
-            loadAdminDashboard();
-            renderProductTable();
-            renderUserTable();
-            renderPendingOrders();
-            renderOrderTable();
-            renderTransactionTable();
-            renderActivityData();
-            renderChatMessages();
+            fetchAdminOrders().catch(() => {}).finally(() => {
+                loadAdminDashboard();
+                renderProductTable();
+                renderUserTable();
+                renderPendingOrders();
+                renderOrderTable();
+                renderTransactionTable();
+                renderActivityData();
+                renderChatMessages();
+            });
 
             document.getElementById('productForm').addEventListener('submit', function(e) {
                 e.preventDefault();

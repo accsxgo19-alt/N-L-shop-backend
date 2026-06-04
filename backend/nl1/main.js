@@ -1545,10 +1545,27 @@ async function loadProductDetail() {
         return;
     }
 
-    let product = await fetchProductFromServer(productId);
-    if (!product) {
-        product = getProductById(productId);
+    const cachedProduct = getProductById(productId);
+    if (cachedProduct) {
+        renderProductDetailView(cachedProduct, editMode);
+    } else {
+        container.innerHTML = '<div class="empty-message">Đang tải sản phẩm...</div>';
     }
+
+    const serverProduct = await fetchProductFromServer(productId);
+    if (serverProduct) {
+        renderProductDetailView(serverProduct, editMode);
+        return;
+    }
+
+    if (!cachedProduct) {
+        container.innerHTML = '<div class="empty-message">Sản phẩm không tồn tại. <a href="index.html">Quay lại</a></div>';
+    }
+}
+
+function renderProductDetailView(product, editMode) {
+    const container = document.getElementById('productDetailContainer');
+    if (!container) return;
 
     const rating = Number(product?.rating) || 0;
     const sold = Number(product?.sold) || 0;
@@ -1557,10 +1574,6 @@ async function loadProductDetail() {
         : sold
             ? `<div class="product-detail-rating">Đã bán ${sold}</div>`
             : '';
-    if (!product) {
-        container.innerHTML = '<div class="empty-message">Sản phẩm không tồn tại. <a href="index.html">Quay lại</a></div>';
-        return;
-    }
 
     if (editMode && isAdmin()) {
         container.innerHTML = `
@@ -2245,6 +2258,21 @@ function initializeIndexProducts() {
             if (!document.querySelector('.products-error-note')) {
                 container.parentElement.insertBefore(info, container);
             }
+        }
+    });
+}
+
+function initializeAdminPageProducts() {
+    const productsTable = document.getElementById('productTable');
+    if (productsTable) {
+        if (getAllProducts().length === 0) {
+            productsTable.innerHTML = '<div class="empty-message">Đang tải sản phẩm...</div>';
+        }
+    }
+
+    window.addEventListener('products:updated', () => {
+        if (typeof renderProductTable === 'function') {
+            renderProductTable();
         }
     });
 }

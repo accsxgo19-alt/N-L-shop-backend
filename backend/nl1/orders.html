@@ -75,8 +75,13 @@
                 window.location.href = 'login.html';
                 return;
             }
+            const cachedOrders = getUserOrders() || [];
+            displayOrders(cachedOrders);
+
             const orders = await fetchUserOrders();
-            displayOrders(orders || []);
+            if (orders && orders.length) {
+                displayOrders(orders);
+            }
         });
 
         async function fetchUserOrders() {
