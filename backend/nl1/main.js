@@ -1607,8 +1607,8 @@ async function loadProductDetail() {
                     <button type="button" onclick="updateDetailQuantity(1)">+</button>
                 </div>
                 <div class="product-detail-actions">
-                    <button class="btn btn-secondary" onclick="addProductDetailToCart()">Thêm vào giỏ</button>
-                    <button class="btn btn-primary" onclick="setBuyNow('${product.id}', Number(document.getElementById('detailQuantity').value))">Thanh toán ngay</button>
+                    <button type="button" class="btn btn-secondary" onclick="addProductDetailToCart()">Thêm vào giỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="setBuyNow('${product.id}', Number(document.getElementById('detailQuantity').value))">Thanh toán ngay</button>
                 </div>
             </div>
         </div>

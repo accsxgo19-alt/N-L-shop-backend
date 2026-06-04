@@ -4,11 +4,9 @@ const Product = require('../models/Product');
 
 const createOrder = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
-
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
-    }
+    // Support two flows:
+    // - Normal flow: use server-side Cart for authenticated users (cart from DB)
+    // - Buy-now flow: client may POST `items` in body (productId, quantity). If provided, use them.
 
     const {
       fullname,
@@ -17,34 +15,74 @@ const createOrder = async (req, res) => {
       paymentMethod,
       discountCode = '',
       discountAmount = 0,
+      items: bodyItems,
     } = req.body || {};
 
-    const orderItems = cart.items.map((item) => ({
-      product: item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      quantity: item.quantity,
-    }));
+    let orderItems = [];
+    let cart = null;
 
-    const totalAmount = orderItems.reduce((sum, item) => {
-      return sum + item.price * item.quantity;
-    }, 0);
+    if (Array.isArray(bodyItems) && bodyItems.length > 0) {
+      // Use body items for buy-now or guest-provided items
+      // Normalize items and try to resolve product references in DB when possible
+      for (const it of bodyItems) {
+        const productId = it.productId || it.product || it.id || it._id;
+        const quantity = Number(it.quantity) || 1;
+        let product = null;
+        if (productId) {
+          try {
+            product = await Product.findById(String(productId));
+          } catch (e) {
+            product = null;
+          }
+        }
 
+        if (product) {
+          orderItems.push({
+            product: product._id,
+            name: product.name,
+            price: product.price,
+            quantity,
+          });
+        } else {
+          // Fallback to using provided name/price without touching DB stock
+          orderItems.push({
+            product: product && product._id ? product._id : null,
+            name: it.name || (product && product.name) || `Sản phẩm ${productId || ''}`,
+            price: Number(it.price) || (product && product.price) || 0,
+            quantity,
+          });
+        }
+      }
+    } else {
+      // Default: use server-side cart
+      cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
+      if (!cart || cart.items.length === 0) {
+        return res.status(400).json({ message: 'Giỏ hàng trống, không thể tạo đơn hàng.' });
+      }
+
+      orderItems = cart.items.map((item) => ({
+        product: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      }));
+    }
+
+    const totalAmount = orderItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
+
+    // Validate and update stock only for items that have real product references
     await Promise.all(
-      cart.items.map(async (item) => {
-        const product = await Product.findById(item.product._id);
-
+      orderItems.map(async (item) => {
+        if (!item.product) return;
+        const product = await Product.findById(item.product);
         if (!product) {
           throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
         }
-
         if (product.stock < item.quantity) {
           throw new Error(`Sản phẩm ${product.name} không đủ số lượng trong kho.`);
         }
-
         product.stock -= item.quantity;
         product.sold = (product.sold || 0) + item.quantity;
-
         await product.save();
       })
     );
@@ -63,8 +101,11 @@ const createOrder = async (req, res) => {
       status: 'pending',
     });
 
-    cart.items = [];
-    await cart.save();
+    // Clear server-side cart only if we used it
+    if (cart) {
+      cart.items = [];
+      await cart.save();
+    }
 
     try {
       const io = req.app.locals.io;

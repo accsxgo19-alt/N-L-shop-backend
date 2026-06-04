@@ -257,12 +257,17 @@
         }
 
         function getFullAddress() {
-            const province = document.getElementById('province').selectedOptions[0]?.text || '';
-            const ward = document.getElementById('ward').selectedOptions[0]?.text || '';
-            const detail = document.getElementById('addressDetail').value.trim();
-            const note = document.getElementById('addressNote').value.trim();
-            if (!province || !ward || !detail) return '';
-            return `${detail}, ${ward}, ${province}${note ? ', ' + note : ''}`;
+                const province = document.getElementById('province')?.selectedOptions[0]?.text || '';
+                const ward = document.getElementById('ward')?.selectedOptions[0]?.text || '';
+                const detail = document.getElementById('addressDetail')?.value.trim() || '';
+                const note = document.getElementById('addressNote')?.value.trim() || '';
+                // Allow checkout when user provided street detail even if province/ward failed to load
+                if (!detail) return '';
+                const parts = [detail];
+                if (ward) parts.push(ward);
+                if (province) parts.push(province);
+                if (note) parts.push(note);
+                return parts.join(', ');
         }
 
         function setupAddressSelectors() {
