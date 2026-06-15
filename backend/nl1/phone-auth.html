@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập/Đăng ký bằng số điện thoại</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chatbot.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -188,6 +189,8 @@
     </div>
 
     <script src="main.js"></script>
+        <script src="chatbot-knowledge.js"></script>
+        <script src="chatbot.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode') === 'register' ? 'register' : 'login';
