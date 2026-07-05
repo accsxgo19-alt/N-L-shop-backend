@@ -1,6 +1,43 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+
+const resolveOrderProducts = async (productIds = []) => {
+  const normalizedIds = productIds
+    .filter(Boolean)
+    .map((id) => String(id).trim())
+    .filter(Boolean);
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  const objectIds = normalizedIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  const conditions = [{ id: { $in: normalizedIds } }];
+
+  if (objectIds.length) {
+    conditions.push({ _id: { $in: objectIds } });
+  }
+
+  return Product.find({ $or: conditions });
+};
+
+const buildProductLookup = (products = []) => {
+  const lookup = new Map();
+
+  products.forEach((product) => {
+    if (!product) return;
+    if (product._id) {
+      lookup.set(String(product._id), product);
+    }
+    if (product.id) {
+      lookup.set(String(product.id), product);
+    }
+  });
+
+  return lookup;
+};
 
 const createOrder = async (req, res) => {
   try {
@@ -29,14 +66,10 @@ const createOrder = async (req, res) => {
         .filter(Boolean);
 
       const existingProducts = productIds.length
-        ? await Product.find({
-            _id: { $in: productIds.map((id) => String(id)) },
-          })
+        ? await resolveOrderProducts(productIds)
         : [];
 
-      const productMap = new Map(
-        existingProducts.map((product) => [String(product._id), product])
-      );
+      const productMap = buildProductLookup(existingProducts);
 
       for (const it of bodyItems) {
         const productId = it.productId || it.product || it.id || it._id;
@@ -51,13 +84,7 @@ const createOrder = async (req, res) => {
             quantity,
           });
         } else {
-          // Fallback to using provided name/price without touching DB stock
-          orderItems.push({
-            product: product && product._id ? product._id : null,
-            name: it.name || (product && product.name) || `Sản phẩm ${productId || ''}`,
-            price: Number(it.price) || (product && product.price) || 0,
-            quantity,
-          });
+          throw new Error(`Sản phẩm không tồn tại khi tạo đơn hàng: ${productId || it.name || 'không xác định'}`);
         }
       }
     } else {
@@ -83,19 +110,15 @@ const createOrder = async (req, res) => {
       .map((item) => item.product);
 
     const productsToUpdate = productIdsToUpdate.length
-      ? await Product.find({
-          _id: { $in: productIdsToUpdate },
-        })
+      ? await resolveOrderProducts(productIdsToUpdate)
       : [];
 
-    const productMap = new Map(
-      productsToUpdate.map((product) => [String(product._id), product])
-    );
+    const productLookup = buildProductLookup(productsToUpdate);
 
     for (const item of orderItems) {
       if (!item.product) continue;
 
-      const product = productMap.get(String(item.product));
+      const product = productLookup.get(String(item.product));
 
       if (!product) {
         throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
@@ -112,8 +135,8 @@ const createOrder = async (req, res) => {
 
     const order = await Order.create({
       user: req.user._id,
-      customerName: fullname || req.user.name || req.user.fullname || req.user.email,
-      customerEmail: req.user.email,
+      customerName: fullname || req.body?.fullname || req.user.name || req.user.fullname || req.user.email,
+      customerEmail: req.body?.email || req.user.email || '',
       customerPhone: phone || req.user.phone || '',
       shippingAddress: address || req.user.address || '',
       paymentMethod: paymentMethod || 'cash',

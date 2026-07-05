@@ -2347,13 +2347,14 @@ async function initializeIndexProducts() {
     const cache = getHomepageProductsCache();
     const isCacheFresh = cache && (Date.now() - cache.timestamp) < 30 * 1000;
     const offlineCache = isCacheFresh ? cache.products : null;
+    const fallbackProducts = getStoredProducts();
 
     window.addEventListener('products:updated', () => {
         loadProducts();
     });
 
     window.addEventListener('products:error', (event) => {
-        if (window.__productsSyncStatus !== 'success' && !offlineCache?.length) {
+        if (window.__productsSyncStatus !== 'success' && !offlineCache?.length && !fallbackProducts?.length) {
             renderProductsError(event?.detail?.message);
         }
         if (offlineCache?.length) {
@@ -2361,24 +2362,38 @@ async function initializeIndexProducts() {
             info.className = 'products-error-note';
             info.textContent = 'Hiện tại không thể cập nhật sản phẩm mới. Hiển thị dữ liệu gần nhất.';
             if (!document.querySelector('.products-error-note')) {
-                container.parentElement.insertBefore(info, container);
+                container.parentElement?.insertBefore(info, container);
             }
         }
     });
 
-    if (offlineCache?.length) {
-        window.__productsCache = offlineCache;
+    if (Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
+        window.__productsCache = fallbackProducts;
         window.__productsSyncStatus = 'success';
+        saveHomepageProductsCache(fallbackProducts);
         loadProducts();
-        return;
     }
 
-    const serverData = await syncProductsFromServer();
-    if (!serverData && offlineCache?.length) {
+    if (Array.isArray(offlineCache) && offlineCache.length > 0) {
         window.__productsCache = offlineCache;
         window.__productsSyncStatus = 'success';
         loadProducts();
     }
+
+    void syncProductsFromServer().then((serverData) => {
+        if (Array.isArray(serverData) && serverData.length > 0) {
+            window.__productsCache = serverData;
+            window.__productsSyncStatus = 'success';
+            saveHomepageProductsCache(serverData);
+            loadProducts();
+        } else if ((!Array.isArray(fallbackProducts) || fallbackProducts.length === 0) && (!Array.isArray(offlineCache) || offlineCache.length === 0)) {
+            renderProductsError('Không thể tải sản phẩm. Vui lòng thử lại sau.');
+        }
+    }).catch(() => {
+        if ((!Array.isArray(fallbackProducts) || fallbackProducts.length === 0) && (!Array.isArray(offlineCache) || offlineCache.length === 0)) {
+            renderProductsError('Không thể kết nối đến server sản phẩm.');
+        }
+    });
 }
 
 function initializeAdminPageProducts() {
