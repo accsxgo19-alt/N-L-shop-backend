@@ -195,6 +195,7 @@
         let currentCheckoutItems = [];
         let currentDiscountCode = '';
         let currentDiscountAmount = 0;
+        let isCheckoutSubmitting = false;
 
         let addressData = [];
 
@@ -436,134 +437,185 @@
             document.getElementById('checkoutTotal').textContent = Math.floor(total).toLocaleString() + 'đ';
         }
 
+        function normalizeCheckoutItemsForOrder(items) {
+            return (items || [])
+                .map(item => {
+                    const productId = String(item.productId || item.product || item.id || item._id || '').trim();
+                    if (!productId) return null;
+
+                    const product = getProductById(productId);
+                    const quantity = Math.max(1, Number(item.quantity) || 1);
+                    const price = Number(product?.price ?? item.price ?? 0);
+
+                    return {
+                        ...item,
+                        productId,
+                        quantity,
+                        name: product?.name || item.name || '',
+                        price,
+                        image: product?.image || item.image || ''
+                    };
+                })
+                .filter(Boolean);
+        }
+
         async function processCheckout() {
+            if (isCheckoutSubmitting) return;
+            isCheckoutSubmitting = true;
+
+            const submitButton = document.querySelector('#checkoutForm button[type="submit"]');
+            const originalButtonText = submitButton?.textContent || '';
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang đặt hàng...';
+            }
+
             let checkoutItems = (currentCheckoutItems || []).slice();
             const isBuyNowCheckout = Boolean(getBuyNowItem());
+            let orderAlreadySavedLocally = false;
 
-            // If items are unexpectedly empty (race or storage sync), try to recover from storage
-            if (!checkoutItems || checkoutItems.length === 0) {
-                const buyNow = getBuyNowItem();
-                const cart = getCart() || [];
-                if (buyNow) {
-                    checkoutItems = [buyNow];
-                } else if (Array.isArray(cart) && cart.length > 0) {
-                    checkoutItems = cart;
+            try {
+                // If items are unexpectedly empty (race or storage sync), try to recover from storage
+                if (!checkoutItems || checkoutItems.length === 0) {
+                    const buyNow = getBuyNowItem();
+                    const cart = getCart() || [];
+                    if (buyNow) {
+                        checkoutItems = [buyNow];
+                    } else if (Array.isArray(cart) && cart.length > 0) {
+                        checkoutItems = cart;
+                    }
                 }
-            }
-            const fullname = document.getElementById('fullname').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const address = getFullAddress();
-            const email = document.getElementById('email').value.trim();
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-            const errEl = document.getElementById('errorMessage');
+                checkoutItems = normalizeCheckoutItemsForOrder(checkoutItems);
 
-            errEl.textContent = '';
+                const fullname = document.getElementById('fullname').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const address = getFullAddress();
+                const email = document.getElementById('email').value.trim();
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cash';
+                const agreeTerms = document.getElementById('agreeTerms')?.checked;
+                const errEl = document.getElementById('errorMessage');
 
-            if (!fullname || !phone || !address || !email) {
-                errEl.textContent = 'Vui lòng điền đầy đủ thông tin địa chỉ và email!';
-                return;
-            }
+                errEl.textContent = '';
 
-            if (checkoutItems.length === 0) {
-                errEl.textContent = 'Giỏ hàng đang trống, vui lòng chọn sản phẩm trước khi thanh toán.';
-                return;
-            }
-
-            if (currentDiscountCode) {
-                const subtotal = calculateCartSubtotal(checkoutItems);
-                const shipping = subtotal > 500000 ? 0 : 50000;
-                const tax = subtotal * 0.1;
-                const discountCheck = getDiscountInfo(currentDiscountCode, subtotal, shipping, tax, email);
-
-                if (!discountCheck.valid) {
-                    errEl.textContent = discountCheck.description || 'Mã giảm giá không hợp lệ.';
+                if (!fullname || !phone || !address || !email) {
+                    errEl.textContent = 'Vui lòng điền đầy đủ thông tin địa chỉ và email!';
                     return;
                 }
-            }
 
-            const orderData = {
-                fullname,
-                phone,
-                address,
-                email,
-                paymentMethod,
-                items: checkoutItems,
-                discountCode: currentDiscountCode || '',
-                discountAmount: currentDiscountAmount || 0,
-            };
+                if (!agreeTerms) {
+                    errEl.textContent = 'Vui lòng đồng ý với điều khoản mua hàng.';
+                    return;
+                }
 
-            const serverResult = await submitOrderToServer(orderData);
-            let order;
+                if (checkoutItems.length === 0) {
+                    errEl.textContent = 'Giỏ hàng đang trống, vui lòng chọn sản phẩm trước khi thanh toán.';
+                    return;
+                }
 
-            if (serverResult.success) {
-                order = serverResult.order;
-            } else if (serverResult.localFallback) {
-                order = createOrder(
+                if (currentDiscountCode) {
+                    const subtotal = calculateCartSubtotal(checkoutItems);
+                    const shipping = subtotal > 500000 ? 0 : 50000;
+                    const tax = subtotal * 0.1;
+                    const discountCheck = getDiscountInfo(currentDiscountCode, subtotal, shipping, tax, email);
+
+                    if (!discountCheck.valid) {
+                        errEl.textContent = discountCheck.description || 'Mã giảm giá không hợp lệ.';
+                        return;
+                    }
+                }
+
+                const orderData = {
                     fullname,
                     phone,
                     address,
                     email,
                     paymentMethod,
-                    checkoutItems,
-                    currentDiscountCode,
-                    currentDiscountAmount
-                );
-            } else {
-                let msg = serverResult.message || 'Đặt hàng thất bại, vui lòng thử lại.';
+                    items: checkoutItems,
+                    discountCode: currentDiscountCode || '',
+                    discountAmount: currentDiscountAmount || 0,
+                };
 
-                if (serverResult.details && Array.isArray(serverResult.details) && serverResult.details.length) {
-                    msg += ' ' + serverResult.details.map(d => `${d.field}: ${d.message}`).join('; ');
+                const serverResult = await submitOrderToServer(orderData);
+                let order;
+
+                if (serverResult.success) {
+                    order = serverResult.order || {};
+                } else if (serverResult.localFallback) {
+                    order = createOrder(
+                        fullname,
+                        phone,
+                        address,
+                        email,
+                        paymentMethod,
+                        checkoutItems,
+                        currentDiscountCode,
+                        currentDiscountAmount
+                    );
+                    orderAlreadySavedLocally = true;
+                } else {
+                    let msg = serverResult.message || 'Đặt hàng thất bại, vui lòng thử lại.';
+
+                    if (serverResult.details && Array.isArray(serverResult.details) && serverResult.details.length) {
+                        msg += ' ' + serverResult.details.map(d => `${d.field}: ${d.message}`).join('; ');
+                    }
+
+                    errEl.textContent = msg;
+                    return;
                 }
 
-                errEl.textContent = msg;
-                return;
+                const orderCode =
+                    order?.id ||
+                    order?._id ||
+                    order?.orderId ||
+                    order?.orderCode ||
+                    order?.order?.id ||
+                    order?.order?._id ||
+                    order?.data?.id ||
+                    order?.data?._id ||
+                    `ORD-${Date.now()}`;
+
+                const normalizedOrder = {
+                    ...order,
+                    id: String(orderCode),
+                    userEmail: order.userEmail || email,
+                    fullname: order.fullname || order.customerName || fullname,
+                    phone: order.phone || order.customerPhone || phone,
+                    shippingAddress: order.shippingAddress || order.address || address,
+                    email: order.email || order.customerEmail || email,
+                    paymentMethod: order.paymentMethod || paymentMethod,
+                    items: order.items || checkoutItems,
+                    status: order.status || 'processing',
+                    date: order.date || order.createdAt || new Date().toISOString(),
+                    discountCode: order.discountCode || currentDiscountCode || '',
+                    discountAmount: order.discountAmount || currentDiscountAmount || 0,
+                    total: order.total || order.totalAmount || calculateOrderTotal(checkoutItems),
+                };
+
+                if (!orderAlreadySavedLocally) {
+                    saveOrder(normalizedOrder);
+                    updateProductSales(checkoutItems);
+                }
+
+                if (isBuyNowCheckout) {
+                    clearBuyNowItem();
+                } else {
+                    clearCart();
+                    sessionStorage.removeItem('cartDiscount');
+                }
+
+                currentDiscountCode = '';
+                currentDiscountAmount = 0;
+
+                alert('Đặt hàng thành công! Mã đơn hàng: ' + normalizedOrder.id);
+                window.location.href = 'orders.html';
+            } finally {
+                isCheckoutSubmitting = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                }
             }
-
-            const orderCode =
-                order?.id ||
-                order?._id ||
-                order?.orderId ||
-                order?.orderCode ||
-                order?.order?.id ||
-                order?.order?._id ||
-                order?.data?.id ||
-                order?.data?._id ||
-                `ORD-${Date.now()}`;
-
-            const normalizedOrder = {
-                ...order,
-                id: String(orderCode),
-                userEmail: order.userEmail || email,
-                fullname: order.fullname || fullname,
-                phone: order.phone || phone,
-                shippingAddress: order.shippingAddress || order.address || address,
-                email: order.email || email,
-                paymentMethod: order.paymentMethod || paymentMethod,
-                items: order.items || checkoutItems,
-                status: order.status || 'processing',
-                date: order.date || order.createdAt || new Date().toISOString(),
-                discountCode: order.discountCode || currentDiscountCode || '',
-                discountAmount: order.discountAmount || currentDiscountAmount || 0,
-                total: order.total || order.totalAmount || calculateOrderTotal(checkoutItems),
-            };
-
-            saveOrder(normalizedOrder);
-            updateProductSales(checkoutItems);
-
-            if (isBuyNowCheckout) {
-                clearBuyNowItem();
-            } else {
-                clearCart();
-                sessionStorage.removeItem('cartDiscount');
-            }
-
-            currentDiscountCode = '';
-            currentDiscountAmount = 0;
-
-            alert('Đặt hàng thành công! Mã đơn hàng: ' + normalizedOrder.id);
-            window.location.href = 'orders.html';
         }
-
         async function submitOrderToServer(orderData) {
             try {
                 let response;
@@ -587,8 +639,8 @@
                 const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
-                    if (response.status === 404 || response.status === 502 || response.status === 503 || response.status === 401) {
-                        // Allow local fallback when server is unavailable or user is unauthenticated
+                    if (response.status === 404 || response.status === 401 || response.status >= 500) {
+                        // Allow local fallback when server is unavailable, out of sync, or user is unauthenticated.
                         return { success: false, localFallback: true };
                     }
 
