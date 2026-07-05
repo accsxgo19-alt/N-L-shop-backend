@@ -26,6 +26,24 @@ const { validateCheckout } = require('./middleware/validator');
 
 dotenv.config();
 
+const LEGACY_PRODUCT_ID_ALIASES = {
+  '001': 'Áo Thun Basic',
+  '002': 'Áo Sơ Mi Nam',
+  '003': 'Áo Len Nữ',
+  '004': 'Quần Jeans Xanh',
+  '005': 'Quần Tây Nam',
+  '006': 'Quần Legging Nữ',
+  '007': 'Váy Hoa Nữ',
+  '008': 'Váy Xếp Li',
+  '009': 'Giày Sneaker Trắng',
+  '010': 'Giày Cao Gót',
+  '011': 'Dép Nữ',
+  '012': 'Túi Xách',
+  '013': 'Ví Da Nam',
+  '014': 'Mũ Lưỡi Trai',
+  '015': 'Dây Chuyền Vàng',
+};
+
 const resolveCheckoutProducts = async (productRefs = []) => {
   const normalizedIds = productRefs
     .filter(Boolean)
@@ -37,10 +55,17 @@ const resolveCheckoutProducts = async (productRefs = []) => {
   }
 
   const objectIds = normalizedIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  const aliasNames = normalizedIds
+    .map((id) => LEGACY_PRODUCT_ID_ALIASES[String(id).trim()])
+    .filter(Boolean);
   const conditions = [{ id: { $in: normalizedIds } }];
 
   if (objectIds.length) {
     conditions.push({ _id: { $in: objectIds } });
+  }
+
+  if (aliasNames.length) {
+    conditions.push({ name: { $in: aliasNames } });
   }
 
   return Product.find({ $or: conditions });
@@ -119,8 +144,20 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
     const productMap = new Map();
     products.forEach((product) => {
       if (!product) return;
-      productMap.set(String(product._id), product);
-      productMap.set(String(product.id), product);
+      if (product._id) {
+        productMap.set(String(product._id), product);
+      }
+      if (product.id) {
+        productMap.set(String(product.id), product);
+      }
+
+      const legacyId = Object.entries(LEGACY_PRODUCT_ID_ALIASES).find(
+        ([, productName]) => productName === product.name
+      )?.[0];
+
+      if (legacyId) {
+        productMap.set(String(legacyId), product);
+      }
     });
 
     const orderItems = [];
