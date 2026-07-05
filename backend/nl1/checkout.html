@@ -317,18 +317,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Yêu cầu đăng nhập trước khi thanh toán
-            if (!isLoggedIn()) {
-                sessionStorage.setItem('redirectAfterLogin', window.location.href);
-                alert('Vui lòng đăng nhập để thanh toán.');
-                window.location.href = 'login.html';
-                return;
-            }
             const buyNowItem = getBuyNowItem();
             const cart = getCart();
             currentCheckoutItems = buyNowItem ? [buyNowItem] : cart;
 
-            if (currentCheckoutItems.length === 0) {
+            if (!Array.isArray(currentCheckoutItems) || currentCheckoutItems.length === 0) {
                 document.getElementById('checkoutEmpty').style.display = 'block';
                 document.getElementById('checkoutForm').style.display = 'none';
                 document.getElementById('checkoutSummary').style.display = 'none';
