@@ -47,18 +47,26 @@ const resolveOrderProducts = async (productIds = []) => {
 
   const products = await Product.find({ $or: conditions });
   const seenIds = new Set(products.map((product) => String(product._id)));
-  const legacyIndexes = normalizedIds
-    .filter((id) => LEGACY_PRODUCT_ID_ALIASES[String(id).trim()])
-    .map((id) => Number(id) - 1)
-    .filter((index) => Number.isInteger(index) && index >= 0);
+  const legacyIds = normalizedIds.filter((id) => LEGACY_PRODUCT_ID_ALIASES[String(id).trim()]);
 
-  if (legacyIndexes.length) {
+  if (legacyIds.length) {
     const sortedProducts = await Product.find({}).sort({ _id: 1 });
-    legacyIndexes.forEach((index) => {
-      const product = sortedProducts[index];
+    legacyIds.forEach((legacyId) => {
+      const aliasName = LEGACY_PRODUCT_ID_ALIASES[String(legacyId).trim()];
+      const product =
+        products.find((item) => String(item.id || '') === String(legacyId) || item.name === aliasName) ||
+        sortedProducts[Number(legacyId) - 1];
+
       if (product && !seenIds.has(String(product._id))) {
         products.push(product);
         seenIds.add(String(product._id));
+      }
+
+      if (product) {
+        product.$locals.legacyProductIds = product.$locals.legacyProductIds || [];
+        if (!product.$locals.legacyProductIds.includes(String(legacyId))) {
+          product.$locals.legacyProductIds.push(String(legacyId));
+        }
       }
     });
   }
@@ -77,6 +85,9 @@ const buildProductLookup = (products = []) => {
     if (product.id) {
       lookup.set(String(product.id), product);
     }
+    (product.$locals?.legacyProductIds || []).forEach((legacyId) => {
+      lookup.set(String(legacyId), product);
+    });
 
     const legacyId = Object.entries(LEGACY_PRODUCT_ID_ALIASES).find(
       ([, productName]) => productName === product.name
