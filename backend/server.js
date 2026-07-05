@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const compression = require('compression');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -24,6 +25,26 @@ const { checkoutLimiter } = require('./middleware/security');
 const { validateCheckout } = require('./middleware/validator');
 
 dotenv.config();
+
+const resolveCheckoutProducts = async (productRefs = []) => {
+  const normalizedIds = productRefs
+    .filter(Boolean)
+    .map((id) => String(id).trim())
+    .filter(Boolean);
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  const objectIds = normalizedIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  const conditions = [{ id: { $in: normalizedIds } }];
+
+  if (objectIds.length) {
+    conditions.push({ _id: { $in: objectIds } });
+  }
+
+  return Product.find({ $or: conditions });
+};
 
 if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET is not defined. Please set JWT_SECRET in environment variables.');
@@ -92,34 +113,36 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
       .filter(Boolean);
 
     const products = productIds.length
-      ? await Product.find({
-          _id: { $in: productIds },
-        })
+      ? await resolveCheckoutProducts(productIds)
       : [];
 
-    if (products.length !== cartItems.length) {
-      return res.status(400).json({
-        message: 'Một số sản phẩm trong giỏ hàng không tồn tại.',
-      });
-    }
+    const productMap = new Map();
+    products.forEach((product) => {
+      if (!product) return;
+      productMap.set(String(product._id), product);
+      productMap.set(String(product.id), product);
+    });
 
-    const productMap = new Map(
-      products.map((product) => [product._id.toString(), product])
-    );
-
-    const orderItems = cartItems.map((item) => {
+    const orderItems = [];
+    for (const item of cartItems) {
       const product = productMap.get(String(item.productId));
 
-      return {
+      if (!product) {
+        return res.status(400).json({
+          message: 'Một số sản phẩm trong giỏ hàng không tồn tại.',
+        });
+      }
+
+      orderItems.push({
         product: product._id,
         name: product.name,
         price: product.price,
         quantity: item.quantity,
-      };
-    });
+      });
+    }
 
     for (const item of orderItems) {
-      const product = productMap.get(item.product.toString());
+      const product = productMap.get(String(item.product));
 
       if (!product) {
         return res.status(400).json({

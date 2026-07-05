@@ -2415,11 +2415,6 @@ async function loadProducts(searchTerm = '', category = '') {
     const container = document.getElementById('productsContainer');
     if (!container) return;
 
-    // Ensure we have attempted to sync from server first
-    if (window.__productsSyncStatus !== 'success') {
-        await syncProductsFromServer().catch(() => { });
-    }
-
     const filteredProducts = filterProducts(searchTerm, category);
     container.innerHTML = '';
 
