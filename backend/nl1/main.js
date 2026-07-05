@@ -2366,6 +2366,13 @@ async function initializeIndexProducts() {
         }
     });
 
+    if (offlineCache?.length) {
+        window.__productsCache = offlineCache;
+        window.__productsSyncStatus = 'success';
+        loadProducts();
+        return;
+    }
+
     const serverData = await syncProductsFromServer();
     if (!serverData && offlineCache?.length) {
         window.__productsCache = offlineCache;
@@ -2457,7 +2464,7 @@ function renderProductImage(image) {
         value.startsWith('/img/');
 
     if (isImagePath) {
-        return `<img class="product-image-preview" src="${escapeHtml(value)}" alt="Ảnh sản phẩm">`;
+        return `<img class="product-image-preview" src="${escapeHtml(value)}" alt="Ảnh sản phẩm" loading="lazy" decoding="async">`;
     }
 
     return `<span class="product-emoji">${escapeHtml(value)}</span>`;

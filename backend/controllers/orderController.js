@@ -24,17 +24,24 @@ const createOrder = async (req, res) => {
     if (Array.isArray(bodyItems) && bodyItems.length > 0) {
       // Use body items for buy-now or guest-provided items
       // Normalize items and try to resolve product references in DB when possible
+      const productIds = bodyItems
+        .map((it) => it.productId || it.product || it.id || it._id)
+        .filter(Boolean);
+
+      const existingProducts = productIds.length
+        ? await Product.find({
+            _id: { $in: productIds.map((id) => String(id)) },
+          })
+        : [];
+
+      const productMap = new Map(
+        existingProducts.map((product) => [String(product._id), product])
+      );
+
       for (const it of bodyItems) {
         const productId = it.productId || it.product || it.id || it._id;
         const quantity = Number(it.quantity) || 1;
-        let product = null;
-        if (productId) {
-          try {
-            product = await Product.findById(String(productId));
-          } catch (e) {
-            product = null;
-          }
-        }
+        const product = productId ? productMap.get(String(productId)) : null;
 
         if (product) {
           orderItems.push({
@@ -71,21 +78,37 @@ const createOrder = async (req, res) => {
     const totalAmount = orderItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
 
     // Validate and update stock only for items that have real product references
-    await Promise.all(
-      orderItems.map(async (item) => {
-        if (!item.product) return;
-        const product = await Product.findById(item.product);
-        if (!product) {
-          throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
-        }
-        if (product.stock < item.quantity) {
-          throw new Error(`Sản phẩm ${product.name} không đủ số lượng trong kho.`);
-        }
-        product.stock -= item.quantity;
-        product.sold = (product.sold || 0) + item.quantity;
-        await product.save();
-      })
+    const productIdsToUpdate = orderItems
+      .filter((item) => item.product)
+      .map((item) => item.product);
+
+    const productsToUpdate = productIdsToUpdate.length
+      ? await Product.find({
+          _id: { $in: productIdsToUpdate },
+        })
+      : [];
+
+    const productMap = new Map(
+      productsToUpdate.map((product) => [String(product._id), product])
     );
+
+    for (const item of orderItems) {
+      if (!item.product) continue;
+
+      const product = productMap.get(String(item.product));
+
+      if (!product) {
+        throw new Error('Sản phẩm không tồn tại khi tạo đơn hàng');
+      }
+
+      if (product.stock < item.quantity) {
+        throw new Error(`Sản phẩm ${product.name} không đủ số lượng trong kho.`);
+      }
+
+      product.stock -= item.quantity;
+      product.sold = (product.sold || 0) + item.quantity;
+      await product.save();
+    }
 
     const order = await Order.create({
       user: req.user._id,

@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
@@ -31,6 +32,7 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -40,8 +42,16 @@ app.use(
   })
 );
 
+app.use(compression());
+
 // Serve frontend static files from the `nl1` directory
-app.use(express.static(path.join(__dirname, 'nl1')));
+app.use(
+  express.static(path.join(__dirname, 'nl1'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+  })
+);
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -77,9 +87,15 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const cartItems = Array.isArray(items) ? items : [];
 
-    const products = await Product.find({
-      _id: { $in: cartItems.map((item) => item.productId) },
-    });
+    const productIds = cartItems
+      .map((item) => String(item.productId || '').trim())
+      .filter(Boolean);
+
+    const products = productIds.length
+      ? await Product.find({
+          _id: { $in: productIds },
+        })
+      : [];
 
     if (products.length !== cartItems.length) {
       return res.status(400).json({
@@ -87,8 +103,12 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
       });
     }
 
+    const productMap = new Map(
+      products.map((product) => [product._id.toString(), product])
+    );
+
     const orderItems = cartItems.map((item) => {
-      const product = products.find((p) => p._id.toString() === item.productId);
+      const product = productMap.get(String(item.productId));
 
       return {
         product: product._id,
@@ -99,9 +119,7 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
     });
 
     for (const item of orderItems) {
-      const product = products.find(
-        (p) => p._id.toString() === item.product.toString()
-      );
+      const product = productMap.get(item.product.toString());
 
       if (!product) {
         return res.status(400).json({
@@ -121,11 +139,13 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
       0
     );
 
+    const cartItemMap = new Map(
+      cartItems.map((item) => [String(item.productId), item])
+    );
+
     await Promise.all(
       products.map((product) => {
-        const item = cartItems.find(
-          (i) => i.productId === product._id.toString()
-        );
+        const item = cartItemMap.get(product._id.toString());
 
         if (item) {
           product.stock -= item.quantity;

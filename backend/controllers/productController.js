@@ -33,7 +33,7 @@ const createProduct = async (req, res) => {
 
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find().sort({ createdAt: -1 }).lean();
     res.json(products);
   } catch (error) {
     console.error(error);
