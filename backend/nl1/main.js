@@ -700,12 +700,9 @@ function saveAllOrders(orders) {
 
 function getUserOrders() {
     const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.email) return [];
+
     const allOrders = getAllOrders();
-
-    if (!currentUser || !currentUser.email) {
-        return allOrders.filter(order => !order.userEmail || order.userEmail === order.email || order.userEmail === '' || order.email === '');
-    }
-
     const userOrders = allOrders.filter(order => order.userEmail === currentUser.email);
 
     if (isLoggedIn() && !window.__ordersFetchPending) {

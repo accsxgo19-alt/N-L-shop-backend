@@ -72,15 +72,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             initializePage();
-
-            const cachedOrders = getUserOrders() || [];
-            const localGuestOrders = getAllOrders() || [];
-            const initialOrders = cachedOrders.length ? cachedOrders : localGuestOrders;
-            displayOrders(initialOrders);
-
+            
             if (!isLoggedIn()) {
+                alert('Vui lòng đăng nhập để xem đơn hàng!');
+                window.location.href = 'login.html';
                 return;
             }
+
+            const cachedOrders = getUserOrders() || [];
+            displayOrders(cachedOrders);
 
             const orders = await fetchUserOrders();
             if (orders && orders.length) {
