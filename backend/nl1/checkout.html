@@ -43,7 +43,7 @@
                         <p>Giỏ hàng trống. <a href="index.html">Quay lại mua sắm</a></p>
                     </div>
 
-                <form id="checkoutForm" style="display:none;">
+                <form id="checkoutForm" style="display:none;" novalidate>
                     <div class="checkout-section">
                         <h3>Thông tin khách hàng</h3>
                     </div>
@@ -58,13 +58,13 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="province">Tỉnh/Thành phố:</label>
-                            <select id="province" required>
+                            <select id="province">
                                 <option value="">Chọn tỉnh/thành</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="ward">Phường/Xã/Thị trấn:</label>
-                            <select id="ward" required disabled>
+                            <select id="ward" disabled>
                                 <option value="">Chọn phường/xã/thị trấn</option>
                             </select>
                         </div>
@@ -620,22 +620,30 @@
             try {
                 let response;
 
-                if (isLoggedIn()) {
-                    response = await fetch(`${API_BASE}/api/orders`, {
-                        method: 'POST',
-                        headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
-                        body: JSON.stringify(orderData),
-                    });
-                } else {
-                    response = await fetch(`${API_BASE}/api/checkout`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(orderData)
-                    });
-                }
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
 
+                try {
+                    if (isLoggedIn()) {
+                        response = await fetch(`${API_BASE}/api/orders`, {
+                            method: 'POST',
+                            headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
+                            body: JSON.stringify(orderData),
+                            signal: controller.signal,
+                        });
+                    } else {
+                        response = await fetch(`${API_BASE}/api/checkout`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(orderData),
+                            signal: controller.signal,
+                        });
+                    }
+                } finally {
+                    clearTimeout(timeoutId);
+                }
                 const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {

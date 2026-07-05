@@ -1017,13 +1017,16 @@ function saveAdminChatMessage(message) {
     localStorage.setItem(STORAGE_CHAT_KEY, JSON.stringify(messages));
 }
 
+function getCartItemUnitPrice(item) {
+    const product = getProductById(item.productId || item.product || item.id || item._id);
+    return Number(product?.price ?? item.price ?? 0);
+}
+
 function calculateOrderTotal(cartItems) {
     let subtotal = 0;
     cartItems.forEach(item => {
-        const product = getProductById(item.productId);
-        if (product) {
-            subtotal += product.price * item.quantity;
-        }
+        const quantity = Number(item.quantity) || 1;
+        subtotal += getCartItemUnitPrice(item) * quantity;
     });
 
     const shipping = subtotal > 500000 ? 0 : 50000;
@@ -1033,11 +1036,10 @@ function calculateOrderTotal(cartItems) {
 
 function calculateCartSubtotal(cartItems) {
     return cartItems.reduce((sum, item) => {
-        const product = getProductById(item.productId);
-        return product ? sum + product.price * item.quantity : sum;
+        const quantity = Number(item.quantity) || 1;
+        return sum + getCartItemUnitPrice(item) * quantity;
     }, 0);
 }
-
 function hasUsedDiscountCode(email, code) {
     if (!email || !code) return false;
     const normalizedEmail = email.trim().toLowerCase();
