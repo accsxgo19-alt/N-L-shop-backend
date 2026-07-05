@@ -1,15 +1,63 @@
+const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 
-const getCart = async (req, res) => {
-  try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
-    if (!cart) {
-      return res.json({ items: [], totalAmount: 0 });
-    }
+const LEGACY_PRODUCT_ID_ALIASES = {
+  '001': 'Ao Thun Basic',
+  '002': 'Ao So Mi Nam',
+  '003': 'Ao Len Nu',
+  '004': 'Quan Jeans Xanh',
+  '005': 'Quan Tay Nam',
+  '006': 'Quan Legging Nu',
+  '007': 'Vay Hoa Nu',
+  '008': 'Vay Xep Li',
+  '009': 'Giay Sneaker Trang',
+  '010': 'Giay Cao Got',
+  '011': 'Dep Nu',
+  '012': 'Tui Xach',
+  '013': 'Vi Da Nam',
+  '014': 'Mu Luoi Trai',
+  '015': 'Day Chuyen Vang',
+};
 
-    const items = cart.items.map((item) => ({
-      id: item.product._id,
+const normalizeText = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim();
+
+const findProductByAnyId = async (productId) => {
+  const normalizedId = String(productId || '').trim();
+
+  if (!normalizedId) return null;
+
+  if (mongoose.Types.ObjectId.isValid(normalizedId)) {
+    const product = await Product.findById(normalizedId);
+    if (product) return product;
+  }
+
+  const directProduct = await Product.findOne({ id: normalizedId });
+  if (directProduct) return directProduct;
+
+  const aliasName = LEGACY_PRODUCT_ID_ALIASES[normalizedId];
+  if (!aliasName) return null;
+
+  const products = await Product.find({});
+  const normalizedAlias = normalizeText(aliasName);
+  const sortedProducts = products.slice().sort((a, b) => String(a._id).localeCompare(String(b._id)));
+  const byLegacyOrder = sortedProducts[Number(normalizedId) - 1];
+
+  return products.find((product) => normalizeText(product.name) === normalizedAlias) || byLegacyOrder || null;
+};
+
+const serializeCart = async (cart) => {
+  const populatedCart = await cart.populate('items.product');
+  const items = populatedCart.items
+    .filter((item) => item.product)
+    .map((item) => ({
+      id: String(item.product._id),
+      productId: String(item.product._id),
+      legacyId: item.product.id || '',
       name: item.product.name,
       image: item.product.image,
       price: item.product.price,
@@ -17,24 +65,47 @@ const getCart = async (req, res) => {
       subtotal: item.product.price * item.quantity,
     }));
 
-    const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
-    res.json({ items, totalAmount });
+  const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
+  return { items, totalAmount };
+};
+
+const emitCartUpdated = (req, cartPayload) => {
+  try {
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(String(req.user._id)).emit('cartUpdated', cartPayload);
+    }
+  } catch (error) {
+    console.error('Emit cart update failed', error);
+  }
+};
+
+const getCart = async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.json({ items: [], totalAmount: 0 });
+    }
+
+    return res.json(await serializeCart(cart));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi lấy giỏ hàng.' });
+    return res.status(500).json({ message: 'Loi khi lay gio hang.' });
   }
 };
 
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
-    if (!productId || !quantity) {
-      return res.status(400).json({ message: 'Vui lòng cung cấp productId và quantity.' });
+    const normalizedQuantity = Number(quantity) || 0;
+
+    if (!productId || normalizedQuantity < 1) {
+      return res.status(400).json({ message: 'Vui long cung cap productId va quantity hop le.' });
     }
 
-    const product = await Product.findById(productId);
+    const product = await findProductByAnyId(productId);
     if (!product) {
-      return res.status(404).json({ message: 'Sản phẩm không tồn tại.' });
+      return res.status(404).json({ message: 'San pham khong ton tai.' });
     }
 
     const cart = await Cart.findOneAndUpdate(
@@ -43,37 +114,21 @@ const addToCart = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    const itemIndex = cart.items.findIndex((item) => item.product.toString() === productId);
+    const itemIndex = cart.items.findIndex((item) => item.product.toString() === product._id.toString());
     if (itemIndex >= 0) {
-      cart.items[itemIndex].quantity += quantity;
+      cart.items[itemIndex].quantity += normalizedQuantity;
     } else {
-      cart.items.push({ product: productId, quantity });
+      cart.items.push({ product: product._id, quantity: normalizedQuantity });
     }
 
     await cart.save();
-    // emit realtime cart update to the user if socket.io is available
-    try {
-      const io = req.app.locals.io;
-      if (io) {
-        const items = cart.items.map((item) => ({
-          id: item.product._id,
-          name: item.product.name,
-          image: item.product.image,
-          price: item.product.price,
-          quantity: item.quantity,
-          subtotal: item.product.price * item.quantity,
-        }));
-        const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
-        io.to(String(req.user._id)).emit('cartUpdated', { items, totalAmount });
-      }
-    } catch (e) {
-      console.error('Emit cart update failed', e);
-    }
+    const cartPayload = await serializeCart(cart);
+    emitCartUpdated(req, cartPayload);
 
-    res.status(201).json({ message: 'Đã thêm vào giỏ hàng.', cart });
+    return res.status(201).json({ message: 'Da them vao gio hang.', cart: cartPayload });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi thêm sản phẩm vào giỏ hàng.' });
+    return res.status(500).json({ message: 'Loi khi them san pham vao gio hang.' });
   }
 };
 
@@ -83,48 +138,39 @@ const updateCartItem = async (req, res) => {
     const { productId } = req.params;
 
     if (quantity == null) {
-      return res.status(400).json({ message: 'Vui lòng cung cấp quantity.' });
+      return res.status(400).json({ message: 'Vui long cung cap quantity.' });
     }
 
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({ message: 'Giỏ hàng không tồn tại.' });
+      return res.status(404).json({ message: 'Gio hang khong ton tai.' });
     }
 
-    const item = cart.items.find((item) => item.product.toString() === productId);
+    const product = await findProductByAnyId(productId);
+    if (!product) {
+      return res.status(404).json({ message: 'San pham khong ton tai.' });
+    }
+
+    const item = cart.items.find((cartItem) => cartItem.product.toString() === product._id.toString());
     if (!item) {
-      return res.status(404).json({ message: 'Sản phẩm không tồn tại trong giỏ hàng.' });
+      return res.status(404).json({ message: 'San pham khong ton tai trong gio hang.' });
     }
 
-    if (quantity <= 0) {
-      cart.items = cart.items.filter((item) => item.product.toString() !== productId);
+    const normalizedQuantity = Number(quantity) || 0;
+    if (normalizedQuantity <= 0) {
+      cart.items = cart.items.filter((cartItem) => cartItem.product.toString() !== product._id.toString());
     } else {
-      item.quantity = quantity;
+      item.quantity = normalizedQuantity;
     }
 
     await cart.save();
-    try {
-      const io = req.app.locals.io;
-      if (io) {
-        const items = cart.items.map((item) => ({
-          id: item.product._id,
-          name: item.product.name,
-          image: item.product.image,
-          price: item.product.price,
-          quantity: item.quantity,
-          subtotal: item.product.price * item.quantity,
-        }));
-        const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
-        io.to(String(req.user._id)).emit('cartUpdated', { items, totalAmount });
-      }
-    } catch (e) {
-      console.error('Emit cart update failed', e);
-    }
+    const cartPayload = await serializeCart(cart);
+    emitCartUpdated(req, cartPayload);
 
-    res.json({ message: 'Cập nhật giỏ hàng thành công.', cart });
+    return res.json({ message: 'Cap nhat gio hang thanh cong.', cart: cartPayload });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi cập nhật giỏ hàng.' });
+    return res.status(500).json({ message: 'Loi khi cap nhat gio hang.' });
   }
 };
 
@@ -132,39 +178,30 @@ const removeCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
     const cart = await Cart.findOne({ user: req.user._id });
+
     if (!cart) {
-      return res.status(404).json({ message: 'Giỏ hàng không tồn tại.' });
+      return res.status(404).json({ message: 'Gio hang khong ton tai.' });
     }
 
-    const itemIndex = cart.items.findIndex((item) => item.product.toString() === productId);
+    const product = await findProductByAnyId(productId);
+    if (!product) {
+      return res.status(404).json({ message: 'San pham khong ton tai.' });
+    }
+
+    const itemIndex = cart.items.findIndex((item) => item.product.toString() === product._id.toString());
     if (itemIndex === -1) {
-      return res.status(404).json({ message: 'Sản phẩm không tồn tại trong giỏ hàng.' });
+      return res.status(404).json({ message: 'San pham khong ton tai trong gio hang.' });
     }
 
     cart.items.splice(itemIndex, 1);
     await cart.save();
-    try {
-      const io = req.app.locals.io;
-      if (io) {
-        const items = cart.items.map((item) => ({
-          id: item.product._id,
-          name: item.product.name,
-          image: item.product.image,
-          price: item.product.price,
-          quantity: item.quantity,
-          subtotal: item.product.price * item.quantity,
-        }));
-        const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
-        io.to(String(req.user._id)).emit('cartUpdated', { items, totalAmount });
-      }
-    } catch (e) {
-      console.error('Emit cart update failed', e);
-    }
+    const cartPayload = await serializeCart(cart);
+    emitCartUpdated(req, cartPayload);
 
-    res.json({ message: 'Xóa sản phẩm khỏi giỏ hàng thành công.', cart });
+    return res.json({ message: 'Xoa san pham khoi gio hang thanh cong.', cart: cartPayload });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi khi xóa sản phẩm khỏi giỏ hàng.' });
+    return res.status(500).json({ message: 'Loi khi xoa san pham khoi gio hang.' });
   }
 };
 

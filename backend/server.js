@@ -68,7 +68,25 @@ const resolveCheckoutProducts = async (productRefs = []) => {
     conditions.push({ name: { $in: aliasNames } });
   }
 
-  return Product.find({ $or: conditions });
+  const products = await Product.find({ $or: conditions });
+  const seenIds = new Set(products.map((product) => String(product._id)));
+  const legacyIndexes = normalizedIds
+    .filter((id) => LEGACY_PRODUCT_ID_ALIASES[String(id).trim()])
+    .map((id) => Number(id) - 1)
+    .filter((index) => Number.isInteger(index) && index >= 0);
+
+  if (legacyIndexes.length) {
+    const sortedProducts = await Product.find({}).sort({ _id: 1 });
+    legacyIndexes.forEach((index) => {
+      const product = sortedProducts[index];
+      if (product && !seenIds.has(String(product._id))) {
+        products.push(product);
+        seenIds.add(String(product._id));
+      }
+    });
+  }
+
+  return products;
 };
 
 if (!process.env.JWT_SECRET) {
