@@ -318,13 +318,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Yêu cầu đăng nhập trước khi thanh toán
-            if (!isLoggedIn()) {
-                sessionStorage.setItem('redirectAfterLogin', window.location.href);
-                alert('Vui lòng đăng nhập để thanh toán.');
-                window.location.href = 'login.html';
-                return;
-            }
             const buyNowItem = getBuyNowItem();
             const cart = getCart();
             currentCheckoutItems = buyNowItem ? [buyNowItem] : cart;

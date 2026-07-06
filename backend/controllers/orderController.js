@@ -231,8 +231,13 @@ const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: error.message || 'Lỗi khi tạo đơn hàng.',
+    const message = error.message || 'Lỗi khi tạo đơn hàng.';
+    const isClientOrderError =
+      error.name === 'ValidationError' ||
+      /product|stock|cart|gio|hang|khong|không|Sản|Giỏ/i.test(message);
+
+    res.status(isClientOrderError ? 400 : 500).json({
+      message,
     });
   }
 };

@@ -233,16 +233,17 @@ app.post('/api/checkout', checkoutLimiter, validateCheckout, async (req, res) =>
       0
     );
 
-    const cartItemMap = new Map(
-      cartItems.map((item) => [String(item.productId), item])
+    const orderItemMap = new Map(
+      orderItems.map((item) => [String(item.product), item])
     );
 
     await Promise.all(
       products.map((product) => {
-        const item = cartItemMap.get(product._id.toString());
+        const item = orderItemMap.get(String(product._id));
 
         if (item) {
           product.stock -= item.quantity;
+          product.sold = (product.sold || 0) + item.quantity;
           return product.save();
         }
 
