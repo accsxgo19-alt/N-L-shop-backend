@@ -617,43 +617,20 @@
             }
         }
         async function submitOrderToServer(orderData) {
-            try {
-                let response;
+            const postOrder = (url, headers, signal) => fetch(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(orderData),
+                signal,
+            });
 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-                try {
-                    if (isLoggedIn()) {
-                        response = await fetch(`${API_BASE}/api/orders`, {
-                            method: 'POST',
-                            headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
-                            body: JSON.stringify(orderData),
-                            signal: controller.signal,
-                        });
-                    } else {
-                        response = await fetch(`${API_BASE}/api/checkout`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(orderData),
-                            signal: controller.signal,
-                        });
-                    }
-                } finally {
-                    clearTimeout(timeoutId);
-                }
+            const readResponse = async (response) => {
                 const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
-                    if (response.status === 404 || response.status === 401 || response.status >= 500) {
-                        // Allow local fallback when server is unavailable, out of sync, or user is unauthenticated.
-                        return { success: false, localFallback: true };
-                    }
-
                     return {
-                        success: false,
+                        ok: false,
+                        status: response.status,
                         message: result.error || result.message || 'Lỗi khi gửi đơn hàng.',
                         details: result.details || null
                     };
@@ -666,14 +643,73 @@
                     result.createdOrder ||
                     result;
 
-                return {
-                    success: true,
-                    order
-                };
+                return { ok: true, order };
+            };
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const checkoutHeaders = { 'Content-Type': 'application/json' };
+
+                try {
+                    if (isLoggedIn()) {
+                        const authResult = await readResponse(await postOrder(
+                            `${API_BASE}/api/orders`,
+                            Object.assign({}, checkoutHeaders, getAuthHeaders()),
+                            controller.signal
+                        ));
+
+                        if (authResult.ok) {
+                            return { success: true, order: authResult.order };
+                        }
+
+                        if (authResult.status === 401 || authResult.status === 403) {
+                            return {
+                                success: false,
+                                message: authResult.message || 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.',
+                                details: authResult.details || null
+                            };
+                        }
+
+                        const checkoutResult = await readResponse(await postOrder(
+                            `${API_BASE}/api/checkout`,
+                            checkoutHeaders,
+                            controller.signal
+                        ));
+
+                        if (checkoutResult.ok) {
+                            return { success: true, order: checkoutResult.order };
+                        }
+
+                        return {
+                            success: false,
+                            message: checkoutResult.message || authResult.message,
+                            details: checkoutResult.details || authResult.details || null
+                        };
+                    }
+
+                    const guestResult = await readResponse(await postOrder(
+                        `${API_BASE}/api/checkout`,
+                        checkoutHeaders,
+                        controller.signal
+                    ));
+
+                    if (!guestResult.ok) {
+                        return {
+                            success: false,
+                            message: guestResult.message,
+                            details: guestResult.details || null
+                        };
+                    }
+
+                    return { success: true, order: guestResult.order };
+                } finally {
+                    clearTimeout(timeoutId);
+                }
             } catch (error) {
                 return {
                     success: false,
-                    localFallback: true
+                    message: 'Không thể kết nối server để tạo đơn hàng. Vui lòng thử lại sau.'
                 };
             }
         }
